@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, text, boolean, timestamp, doublePrecision, integer
+  pgTable, uuid, text, boolean, timestamp, doublePrecision, integer, primaryKey
 } from 'drizzle-orm/pg-core'
 import { customType } from 'drizzle-orm/pg-core'
 
@@ -18,7 +18,7 @@ export const users = pgTable('users', {
   emailVerified: timestamp('email_verified'),
   image: text('image'),
   role: text('role', { enum: ['admin', 'manager', 'rep'] }),
-  teamId: uuid('team_id'),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -34,7 +34,9 @@ export const accounts = pgTable('accounts', {
   scope: text('scope'),
   idToken: text('id_token'),
   sessionState: text('session_state'),
-})
+}, (table) => ({
+  pk: primaryKey({ columns: [table.provider, table.providerAccountId] }),
+}))
 
 export const sessions = pgTable('sessions', {
   sessionToken: text('session_token').primaryKey(),
@@ -46,7 +48,9 @@ export const verificationTokens = pgTable('verification_tokens', {
   identifier: text('identifier').notNull(),
   token: text('token').notNull(),
   expires: timestamp('expires').notNull(),
-})
+}, (table) => ({
+  pk: primaryKey({ columns: [table.identifier, table.token] }),
+}))
 
 export const teams = pgTable('teams', {
   id: uuid('id').defaultRandom().primaryKey(),
