@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { houses } from '@/lib/db/schema'
-import { assertRole, canSetDoNotKnock } from '@/lib/permissions'
+import { requireRole, canSetDoNotKnock } from '@/lib/permissions'
+import { withErrorHandling } from '@/lib/api'
 import { eq } from 'drizzle-orm'
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   const session = await auth()
-  assertRole(session?.user?.role, 'admin', 'manager', 'rep')
+  requireRole(session?.user?.role, 'admin', 'manager', 'rep')
   const { id } = await params
   const body = await req.json()
   const role = session!.user!.role
@@ -25,4 +26,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const [house] = await db.update(houses).set(updates).where(eq(houses.id, id)).returning()
   if (!house) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(house)
-}
+})

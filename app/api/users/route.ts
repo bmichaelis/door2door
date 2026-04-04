@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
-import { assertRole } from '@/lib/permissions'
+import { requireRole } from '@/lib/permissions'
+import { withErrorHandling } from '@/lib/api'
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   const session = await auth()
-  assertRole(session?.user?.role, 'admin', 'manager')
+  requireRole(session?.user?.role, 'admin', 'manager')
   const rows = await db.select({
     id: users.id,
     name: users.name,
@@ -17,4 +18,4 @@ export async function GET() {
     createdAt: users.createdAt,
   }).from(users).orderBy(users.name)
   return NextResponse.json(rows)
-}
+})

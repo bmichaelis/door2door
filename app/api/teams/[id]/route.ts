@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { teams } from '@/lib/db/schema'
-import { assertRole } from '@/lib/permissions'
+import { requireRole } from '@/lib/permissions'
+import { withErrorHandling } from '@/lib/api'
 import { eq } from 'drizzle-orm'
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   const session = await auth()
-  assertRole(session?.user?.role, 'admin')
+  requireRole(session?.user?.role, 'admin')
   const { id } = await params
   const body = await req.json()
   const [team] = await db.update(teams)
@@ -16,12 +17,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .returning()
   if (!team) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(team)
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withErrorHandling(async (_req: NextRequest, { params }) => {
   const session = await auth()
-  assertRole(session?.user?.role, 'admin')
+  requireRole(session?.user?.role, 'admin')
   const { id } = await params
   await db.delete(teams).where(eq(teams.id, id))
   return new NextResponse(null, { status: 204 })
-}
+})
