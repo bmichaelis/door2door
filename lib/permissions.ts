@@ -1,8 +1,15 @@
 type Role = 'admin' | 'manager' | 'rep'
 
+export class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ForbiddenError'
+  }
+}
+
 export function requireRole(userRole: Role | null | undefined, ...allowed: Role[]): void {
   if (!userRole || !allowed.includes(userRole)) {
-    throw new Error(`Forbidden: requires ${allowed.join(' or ')}`)
+    throw new ForbiddenError(`Forbidden: requires ${allowed.join(' or ')}`)
   }
 }
 
@@ -18,8 +25,4 @@ export function canSetDoNotKnock(role: Role | null | undefined): boolean {
 
 export function isAdmin(role: Role | null | undefined): boolean {
   return role === 'admin'
-}
-
-export function assertRole(userRole: Role | null | undefined, ...allowed: Role[]) {
-  requireRole(userRole, ...allowed)
 }
