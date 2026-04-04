@@ -1,0 +1,42 @@
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import dynamic from 'next/dynamic'
+import { db } from '@/lib/db'
+import { sql } from 'drizzle-orm'
+
+const MapView = dynamic(() => import('@/components/map/MapView'), { ssr: false })
+
+export default async function MapPage() {
+  const session = await auth()
+  if (!session?.user?.role) redirect('/waiting')
+
+  const neighborhoodRows = session.user.role === 'admin'
+    ? await db.execute(sql`SELECT id, name, team_id, created_at, ST_AsGeoJSON(boundary)::json as boundary FROM neighborhoods`)
+    : await db.execute(sql`SELECT id, name, team_id, created_at, ST_AsGeoJSON(boundary)::json as boundary FROM neighborhoods WHERE team_id = ${session.user.teamId}`)
+
+  const neighborhoodIds = neighborhoodRows.rows.map((n: any) => n.id as string)
+
+  const houseRows = neighborhoodIds.length > 0
+    ? await db.execute(
+        sql`SELECT h.*, v.sale_outcome as last_outcome, v.interest_level as last_interest
+            FROM houses h
+            LEFT JOIN LATERAL (
+              SELECT vi.sale_outcome, vi.interest_level FROM visits vi
+              JOIN households ho ON vi.household_id = ho.id
+              WHERE ho.house_id = h.id
+              ORDER BY vi.created_at DESC LIMIT 1
+            ) v ON true
+            WHERE h.neighborhood_id = ANY(${neighborhoodIds})`
+      )
+    : { rows: [] }
+
+  return (
+    <div className="h-[calc(100vh-56px)] w-full">
+      <MapView
+        neighborhoods={neighborhoodRows.rows as any}
+        houses={houseRows.rows as any}
+        onHouseClick={() => {}}
+      />
+    </div>
+  )
+}
