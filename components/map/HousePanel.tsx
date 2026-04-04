@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,50 +25,71 @@ export function HousePanel({ house, userRole, onClose }: Props) {
   const [visits, setVisits] = useState<Visit[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const activeHousehold = households.find(h => h.active)
+
+  const fetchData = useCallback(async () => {
+    if (!house) return
+    setLoading(true)
+    setError(null)
+    try {
+      const [hRes, pRes] = await Promise.all([
+        fetch(`/api/households?houseId=${house.id}`),
+        fetch('/api/products'),
+      ])
+      if (!hRes.ok) throw new Error('Failed to load household data')
+      if (!pRes.ok) throw new Error('Failed to load products')
+
+      const hh: Household[] = await hRes.json()
+      setHouseholds(hh)
+      setProducts(await pRes.json())
+
+      const active = hh.find(h => h.active)
+      if (active) {
+        const vRes = await fetch(`/api/visits?householdId=${active.id}`)
+        if (!vRes.ok) throw new Error('Failed to load visit history')
+        setVisits(await vRes.json())
+      } else {
+        setVisits([])
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }, [house])
 
   useEffect(() => {
     if (!house) return
     setView('detail')
     fetchData()
-  }, [house?.id])
-
-  async function fetchData() {
-    if (!house) return
-    setLoading(true)
-    const [hRes, pRes] = await Promise.all([
-      fetch(`/api/households?houseId=${house.id}`),
-      fetch('/api/products'),
-    ])
-    const hh: Household[] = await hRes.json()
-    setHouseholds(hh)
-    setProducts(await pRes.json())
-
-    const active = hh.find(h => h.active)
-    if (active) {
-      const vRes = await fetch(`/api/visits?householdId=${active.id}`)
-      setVisits(await vRes.json())
-    }
-    setLoading(false)
-  }
+  }, [house?.id, fetchData])
 
   async function handleLogVisit(data: VisitFormData) {
-    await fetch('/api/visits', {
+    const res = await fetch('/api/visits', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
+    if (!res.ok) {
+      setError('Failed to save visit. Please try again.')
+      return
+    }
     setView('detail')
     fetchData()
   }
 
   async function handleNewHousehold(data: { houseId: string; surname: string; headOfHouseholdName: string }) {
-    await fetch('/api/households', {
+    const res = await fetch('/api/households', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
+    if (!res.ok) {
+      setError('Failed to save household. Please try again.')
+      return
+    }
     setView('detail')
     fetchData()
   }
@@ -77,11 +98,15 @@ export function HousePanel({ house, userRole, onClose }: Props) {
     if (!house) return
     const confirmed = window.confirm('Are you sure you want to toggle this flag? This will warn all reps.')
     if (!confirmed) return
-    await fetch(`/api/houses/${house.id}`, {
+    const res = await fetch(`/api/houses/${house.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: !house[field] }),
     })
+    if (!res.ok) {
+      setError('Failed to update flag. Please try again.')
+      return
+    }
     fetchData()
   }
 
@@ -90,7 +115,7 @@ export function HousePanel({ house, userRole, onClose }: Props) {
   const isFlagged = house.doNotKnock || house.noSolicitingSign
 
   return (
-    <Sheet open={!!house} onOpenChange={open => !open && onClose()}>
+    <Sheet open={!!house} onOpenChange={(open: boolean) => !open && onClose()}>
       <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-left">
@@ -98,6 +123,12 @@ export function HousePanel({ house, userRole, onClose }: Props) {
             {isFlagged && <Badge variant="destructive" className="ml-2">Flagged</Badge>}
           </SheetTitle>
         </SheetHeader>
+
+        {error && (
+          <div className="my-3 rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
         {isFlagged && (
           <div className="my-3 rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
