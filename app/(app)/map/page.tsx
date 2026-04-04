@@ -1,10 +1,8 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
-
-const MapView = dynamic(() => import('@/components/map/MapView'), { ssr: false })
+import { MapShell } from '@/components/map/MapShell'
 
 export default async function MapPage() {
   const session = await auth()
@@ -31,12 +29,10 @@ export default async function MapPage() {
     : { rows: [] }
 
   return (
-    <div className="h-[calc(100vh-56px)] w-full">
-      <MapView
-        neighborhoods={neighborhoodRows.rows as any}
-        houses={houseRows.rows as any}
-        onHouseClick={() => {}}
-      />
-    </div>
+    <MapShell
+      neighborhoods={neighborhoodRows.rows as any}
+      houses={houseRows.rows as any}
+      userRole={session.user.role}
+    />
   )
 }
