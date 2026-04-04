@@ -35,6 +35,7 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
   const [notes, setNotes] = useState('')
   const [followUpAt, setFollowUpAt] = useState('')
   const [installDate, setInstallDate] = useState('')
+  const [serviceDate, setServiceDate] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -49,6 +50,7 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
       saleOutcome: saleOutcome as VisitFormData['saleOutcome'] || undefined,
       productId: productId || undefined,
       installDate: installDate || undefined,
+      serviceDate: serviceDate || undefined,
     })
     setLoading(false)
   }
@@ -104,8 +106,12 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
                 </Select>
               </div>
               <div>
-                <Label>Install / Service Date</Label>
+                <Label>Install Date</Label>
                 <Input type="date" value={installDate} onChange={e => setInstallDate(e.target.value)} />
+              </div>
+              <div>
+                <Label>Service Date</Label>
+                <Input type="date" value={serviceDate} onChange={e => setServiceDate(e.target.value)} />
               </div>
             </>
           )}
