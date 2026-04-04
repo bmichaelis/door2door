@@ -25,10 +25,16 @@ export function DrawControl({ onDrawComplete }: Props) {
       const polygon = e.features[0]?.geometry as GeoJSON.Polygon
       if (polygon) onDrawComplete(polygon)
     }
+    const handleUpdate = (e: any) => {
+      const polygon = e.features[0]?.geometry as GeoJSON.Polygon
+      if (polygon) onDrawComplete(polygon)
+    }
     map.on('draw.create', handleCreate)
+    map.on('draw.update', handleUpdate)
 
     return () => {
       map.off('draw.create', handleCreate)
+      map.off('draw.update', handleUpdate)
       map.removeControl(draw)
     }
   }, [map])
