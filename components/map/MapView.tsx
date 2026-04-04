@@ -28,7 +28,17 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
       mapboxAccessToken={MAPBOX_TOKEN}
       mapStyle="mapbox://styles/mapbox/streets-v12"
       style={{ width: '100%', height: '100%' }}
-      onClick={e => onMapClick?.(e.lngLat.lat, e.lngLat.lng)}
+      interactiveLayerIds={['house-circles']}
+      onClick={e => {
+        // If the click landed on a house pin, open the panel
+        const feature = e.features?.[0]
+        if (feature?.layer?.id === 'house-circles') {
+          const house = houses.find(h => h.id === feature.properties?.id)
+          if (house) { onHouseClick(house); return }
+        }
+        // Otherwise pass the coordinates to the parent (tap-to-add-house)
+        onMapClick?.(e.lngLat.lat, e.lngLat.lng)
+      }}
     >
       <NavigationControl position="top-right" />
       <NeighborhoodLayer neighborhoods={neighborhoods} />
