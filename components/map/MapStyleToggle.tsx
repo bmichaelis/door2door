@@ -21,11 +21,12 @@ type Props = {
 
 export default function MapStyleToggle({ value, onChange }: Props) {
   return (
-    <div style={{ position: 'absolute', bottom: 12, left: 12, zIndex: 1 }}>
+    <div className="absolute bottom-[12px] left-[12px] z-[1]">
       <div className="flex rounded-full bg-white shadow-md text-xs font-semibold p-1 gap-0.5">
         {LABELS.map(({ style, label }) => (
           <button
             key={style}
+            type="button"
             onClick={() => onChange(style)}
             className={
               style === value
