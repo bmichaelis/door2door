@@ -5,14 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { VisitForm, type VisitFormData } from '@/components/forms/VisitForm'
 import { HouseholdForm } from '@/components/forms/HouseholdForm'
-import type { House } from '@/lib/db/schema'
+import type { HouseRow } from '@/lib/db/schema'
+import { formatAddress } from '@/lib/houses'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
 type Product = { id: string; name: string }
 
 type Props = {
-  house: House | null
+  house: HouseRow | null
   userRole: string
   onClose: () => void
 }
@@ -119,7 +120,7 @@ export function HousePanel({ house, userRole, onClose }: Props) {
       <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-left">
-            {house.address}
+            {formatAddress(house)}
             {isFlagged && <Badge variant="destructive" className="ml-2">Flagged</Badge>}
           </SheetTitle>
         </SheetHeader>

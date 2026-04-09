@@ -5,13 +5,13 @@ import { MAPBOX_TOKEN } from '@/lib/mapbox'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'
 import { useState, useEffect } from 'react'
-import type { House, Neighborhood } from '@/lib/db/schema'
+import type { HouseRow, Neighborhood } from '@/lib/db/schema'
 import MapStyleToggle, { MapStyle, MAP_STYLE_URLS } from './MapStyleToggle'
 
 type Props = {
   neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon })[]
-  houses: House[]
-  onHouseClick: (house: House) => void
+  houses: HouseRow[]
+  onHouseClick: (house: HouseRow) => void
   onMapClick?: (lat: number, lng: number) => void
 }
 
@@ -26,7 +26,7 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       pos => setViewport(v => ({ ...v, longitude: pos.coords.longitude, latitude: pos.coords.latitude, zoom: 13 })),
-      () => {} // silently keep the default if denied
+      () => {}
     )
   }, [])
 

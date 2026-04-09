@@ -1,10 +1,8 @@
 'use client'
 import { Source, Layer } from 'react-map-gl/mapbox'
-import type { House } from '@/lib/db/schema'
+import type { HouseRow } from '@/lib/db/schema'
 
-// Color logic based on last visit outcome stored on house (denormalized for map performance)
-// Colors: grey=unvisited, green=sold, yellow=interested/maybe, red=refused, black=flagged
-function pinColor(house: House & { lastOutcome?: string | null }): string {
+function pinColor(house: HouseRow & { lastOutcome?: string | null }): string {
   if (house.doNotKnock || house.noSolicitingSign) return '#000000'
   switch (house.lastOutcome) {
     case 'sold': return '#22c55e'
@@ -14,7 +12,7 @@ function pinColor(house: House & { lastOutcome?: string | null }): string {
   }
 }
 
-type HouseWithOutcome = House & { lastOutcome?: string | null }
+type HouseWithOutcome = HouseRow & { lastOutcome?: string | null }
 
 type Props = {
   houses: HouseWithOutcome[]

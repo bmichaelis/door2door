@@ -4,30 +4,30 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { HousePanel } from './HousePanel'
-import { HouseForm } from '@/components/forms/HouseForm'
-import type { House, Neighborhood } from '@/lib/db/schema'
+import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
+import type { HouseRow, Neighborhood } from '@/lib/db/schema'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
 type Props = {
   neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon })[]
-  houses: (House & { lastOutcome?: string | null })[]
+  houses: (HouseRow & { lastOutcome?: string | null })[]
   userRole: string
 }
 
 export function MapShell({ neighborhoods, houses, userRole }: Props) {
   const router = useRouter()
-  const [selectedHouse, setSelectedHouse] = useState<House | null>(null)
+  const [selectedHouse, setSelectedHouse] = useState<HouseRow | null>(null)
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
 
-  async function handleAddHouse(address: string) {
+  async function handleAddHouse(data: HouseFormData) {
     if (!pendingLocation) return
     setAddError(null)
     const res = await fetch('/api/houses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address, lat: pendingLocation.lat, lng: pendingLocation.lng }),
+      body: JSON.stringify({ ...data, lat: pendingLocation.lat, lng: pendingLocation.lng }),
     })
     if (!res.ok) {
       setAddError('Failed to add house. Please try again.')
