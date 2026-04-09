@@ -33,9 +33,9 @@ describe('schema', () => {
   })
 
   it('houses table does not have old address/lat/lng columns', () => {
-    expect((houses as Record<string, unknown>).address).toBeUndefined()
-    expect((houses as Record<string, unknown>).lat).toBeUndefined()
-    expect((houses as Record<string, unknown>).lng).toBeUndefined()
+    expect((houses as unknown as Record<string, unknown>).address).toBeUndefined()
+    expect((houses as unknown as Record<string, unknown>).lat).toBeUndefined()
+    expect((houses as unknown as Record<string, unknown>).lng).toBeUndefined()
   })
 
   it('houses table has legal flag columns', () => {

@@ -16,7 +16,15 @@ export default async function MapPage() {
 
   const houseRows = neighborhoodIds.length > 0
     ? await db.execute(
-        sql`SELECT h.*, v.sale_outcome as last_outcome, v.interest_level as last_interest
+        sql`SELECT
+              h.id, h.number, h.street, h.unit, h.city, h.region, h.postcode,
+              h.external_id AS "externalId",
+              ST_Y(h.location) AS lat, ST_X(h.location) AS lng,
+              h.neighborhood_id AS "neighborhoodId",
+              h.do_not_knock AS "doNotKnock",
+              h.no_soliciting_sign AS "noSolicitingSign",
+              h.created_at AS "createdAt",
+              v.sale_outcome AS last_outcome, v.interest_level AS last_interest
             FROM houses h
             LEFT JOIN LATERAL (
               SELECT vi.sale_outcome, vi.interest_level FROM visits vi
