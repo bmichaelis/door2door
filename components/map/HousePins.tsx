@@ -1,5 +1,5 @@
 'use client'
-import { Source, Layer } from 'react-map-gl'
+import { Source, Layer } from 'react-map-gl/mapbox'
 import type { House } from '@/lib/db/schema'
 
 // Color logic based on last visit outcome stored on house (denormalized for map performance)

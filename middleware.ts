@@ -6,7 +6,7 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const hasRole = !!req.auth?.user?.role
 
-  if (!isLoggedIn && !pathname.startsWith('/login')) {
+  if (!isLoggedIn && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
   if (isLoggedIn && !hasRole && !pathname.startsWith('/waiting') && !pathname.startsWith('/api/auth')) {

@@ -1,10 +1,10 @@
 'use client'
-import Map, { NavigationControl } from 'react-map-gl'
+import Map, { NavigationControl } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { MAPBOX_TOKEN } from '@/lib/mapbox'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { House, Neighborhood } from '@/lib/db/schema'
 
 type Props = {
@@ -20,6 +20,13 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
     latitude: 39.8283,
     zoom: 10,
   })
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      pos => setViewport(v => ({ ...v, longitude: pos.coords.longitude, latitude: pos.coords.latitude, zoom: 13 })),
+      () => {} // silently keep the default if denied
+    )
+  }, [])
 
   return (
     <Map
