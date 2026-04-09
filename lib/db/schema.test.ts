@@ -16,6 +16,16 @@ describe('schema', () => {
     expect(visits.productId).toBeDefined()
   })
 
+  it('houses table has structured address columns', () => {
+    expect(houses.number).toBeDefined()
+    expect(houses.street).toBeDefined()
+    expect(houses.city).toBeDefined()
+    expect(houses.region).toBeDefined()
+    expect(houses.postcode).toBeDefined()
+    expect(houses.location).toBeDefined()
+    expect(houses.externalId).toBeDefined()
+  })
+
   it('houses table has legal flag columns', () => {
     expect(houses.doNotKnock).toBeDefined()
     expect(houses.noSolicitingSign).toBeDefined()

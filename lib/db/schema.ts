@@ -1,25 +1,29 @@
 import {
-  pgTable, uuid, text, boolean, timestamp, doublePrecision, integer, primaryKey
+  pgTable, uuid, text, boolean, timestamp, integer, primaryKey
 } from 'drizzle-orm/pg-core'
 import { customType } from 'drizzle-orm/pg-core'
 
-// PostGIS geometry type
+// PostGIS polygon type (for neighborhood boundaries)
 const geometry = customType<{ data: string; driverData: string }>({
   dataType() {
     return 'geometry(Polygon, 4326)'
   },
 })
 
-// Declare teams first (without managerId FK to users) to break circular type dependency
+// PostGIS point type (for house locations)
+const geometryPoint = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return 'geometry(Point, 4326)'
+  },
+})
+
 export const teams = pgTable('teams', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
-  // managerId FK declared separately below after users is defined
   managerId: uuid('manager_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Auth.js required tables
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name'),
@@ -79,9 +83,14 @@ export const neighborhoods = pgTable('neighborhoods', {
 
 export const houses = pgTable('houses', {
   id: uuid('id').defaultRandom().primaryKey(),
-  address: text('address').notNull(),
-  lat: doublePrecision('lat').notNull(),
-  lng: doublePrecision('lng').notNull(),
+  number: text('number').notNull(),
+  street: text('street').notNull(),
+  unit: text('unit'),
+  city: text('city').notNull(),
+  region: text('region').notNull(),
+  postcode: text('postcode').notNull(),
+  externalId: text('external_id').unique(),
+  location: geometryPoint('location').notNull(),
   neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id),
   doNotKnock: boolean('do_not_knock').default(false).notNull(),
   noSolicitingSign: boolean('no_soliciting_sign').default(false).notNull(),
@@ -120,3 +129,6 @@ export type Neighborhood = typeof neighborhoods.$inferSelect
 export type House = typeof houses.$inferSelect
 export type Household = typeof households.$inferSelect
 export type Visit = typeof visits.$inferSelect
+
+// HouseRow is the UI-facing type: location extracted to lat/lng by GET routes
+export type HouseRow = Omit<House, 'location'> & { lat: number; lng: number }
