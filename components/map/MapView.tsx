@@ -6,6 +6,7 @@ import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'
 import { useState, useEffect } from 'react'
 import type { House, Neighborhood } from '@/lib/db/schema'
+import MapStyleToggle, { MapStyle, MAP_STYLE_URLS } from './MapStyleToggle'
 
 type Props = {
   neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon })[]
@@ -20,6 +21,7 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
     latitude: 39.8283,
     zoom: 10,
   })
+  const [mapStyle, setMapStyle] = useState<MapStyle>('streets')
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -33,23 +35,22 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
       {...viewport}
       onMove={e => setViewport(e.viewState)}
       mapboxAccessToken={MAPBOX_TOKEN}
-      mapStyle="mapbox://styles/mapbox/streets-v12"
+      mapStyle={MAP_STYLE_URLS[mapStyle]}
       style={{ width: '100%', height: '100%' }}
       interactiveLayerIds={['house-circles']}
       onClick={e => {
-        // If the click landed on a house pin, open the panel
         const feature = e.features?.[0]
         if (feature?.layer?.id === 'house-circles') {
           const house = houses.find(h => h.id === feature.properties?.id)
           if (house) { onHouseClick(house); return }
         }
-        // Otherwise pass the coordinates to the parent (tap-to-add-house)
         onMapClick?.(e.lngLat.lat, e.lngLat.lng)
       }}
     >
       <NavigationControl position="top-right" />
       <NeighborhoodLayer neighborhoods={neighborhoods} />
       <HousePins houses={houses} onHouseClick={onHouseClick} />
+      <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
     </Map>
   )
 }
