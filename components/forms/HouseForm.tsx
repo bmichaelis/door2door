@@ -41,7 +41,7 @@ export function HouseForm({ lat, lng, onSubmit, onCancel }: Props) {
         })
       }
       setGeocoding(false)
-    })
+    }).catch(() => setGeocoding(false))
   }, [lat, lng])
 
   function set(key: keyof HouseFormData) {
@@ -53,8 +53,11 @@ export function HouseForm({ lat, lng, onSubmit, onCancel }: Props) {
     e.preventDefault()
     if (!fields.number.trim() || !fields.street.trim()) return
     setLoading(true)
-    await onSubmit(fields)
-    setLoading(false)
+    try {
+      await onSubmit(fields)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const isValid = fields.number.trim() && fields.street.trim() && fields.city.trim() && fields.postcode.trim()

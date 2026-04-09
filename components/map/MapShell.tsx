@@ -53,7 +53,7 @@ export function MapShell({ neighborhoods, houses, userRole }: Props) {
         userRole={userRole}
         onClose={() => setSelectedHouse(null)}
       />
-      <Sheet open={!!pendingLocation} onOpenChange={(open: boolean) => !open && setPendingLocation(null)}>
+      <Sheet open={!!pendingLocation} onOpenChange={(open: boolean) => !open && (setPendingLocation(null), setAddError(null))}>
         <SheetContent side="bottom" className="h-auto">
           <SheetHeader>
             <SheetTitle>Add House</SheetTitle>
@@ -67,7 +67,7 @@ export function MapShell({ neighborhoods, houses, userRole }: Props) {
                 lat={pendingLocation.lat}
                 lng={pendingLocation.lng}
                 onSubmit={handleAddHouse}
-                onCancel={() => setPendingLocation(null)}
+                onCancel={() => { setPendingLocation(null); setAddError(null) }}
               />
             </div>
           )}
