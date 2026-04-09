@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { houses } from '@/lib/db/schema'
 import { requireRole, canSetDoNotKnock } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   const session = await auth()
@@ -22,7 +22,20 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
     updates.doNotKnock = body.doNotKnock
   }
 
-  const [house] = await db.update(houses).set(updates).where(eq(houses.id, id)).returning()
-  if (!house) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json(house)
+  await db.update(houses).set(updates).where(eq(houses.id, id))
+
+  const result = await db.execute(
+    sql`SELECT
+      houses.id, houses.number, houses.street, houses.unit,
+      houses.city, houses.region, houses.postcode,
+      houses.external_id as "externalId",
+      ST_Y(houses.location) as lat, ST_X(houses.location) as lng,
+      houses.neighborhood_id as "neighborhoodId",
+      houses.do_not_knock as "doNotKnock",
+      houses.no_soliciting_sign as "noSolicitingSign",
+      houses.created_at as "createdAt"
+      FROM houses WHERE houses.id = ${id}`
+  )
+  if (!result.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  return NextResponse.json(result.rows[0])
 })

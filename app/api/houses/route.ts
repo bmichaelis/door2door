@@ -78,7 +78,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     externalId: null,
     location: sql`ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)`,
     neighborhoodId: neighborhoodId as string | null,
-  }).returning()
+  }).returning({ id: houses.id })
 
-  return NextResponse.json(house, { status: 201 })
+  const row = await db.execute(
+    sql`SELECT ${HOUSE_COLS} FROM houses WHERE houses.id = ${house.id}`
+  )
+  return NextResponse.json(row.rows[0], { status: 201 })
 })
