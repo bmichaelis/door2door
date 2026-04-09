@@ -6,6 +6,18 @@ import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { sql } from 'drizzle-orm'
 
+// All columns table-qualified to avoid ambiguity when JOIN is added
+const HOUSE_COLS = sql`
+  houses.id, houses.number, houses.street, houses.unit,
+  houses.city, houses.region, houses.postcode,
+  houses.external_id as "externalId",
+  ST_Y(houses.location) as lat, ST_X(houses.location) as lng,
+  houses.neighborhood_id as "neighborhoodId",
+  houses.do_not_knock as "doNotKnock",
+  houses.no_soliciting_sign as "noSolicitingSign",
+  houses.created_at as "createdAt"
+`
+
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const session = await auth()
   requireRole(session?.user?.role, 'admin', 'manager', 'rep')
@@ -13,11 +25,10 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url)
   const neighborhoodId = searchParams.get('neighborhoodId')
 
-  // Admins see all; reps and managers are scoped to their team's neighborhoods
   if (role === 'admin') {
     const query = neighborhoodId
-      ? sql`SELECT * FROM houses WHERE neighborhood_id = ${neighborhoodId}`
-      : sql`SELECT * FROM houses`
+      ? sql`SELECT ${HOUSE_COLS} FROM houses WHERE houses.neighborhood_id = ${neighborhoodId}`
+      : sql`SELECT ${HOUSE_COLS} FROM houses`
     const rows = await db.execute(query)
     return NextResponse.json(rows.rows)
   }
@@ -25,11 +36,11 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   if (!teamId) return NextResponse.json([])
 
   const query = neighborhoodId
-    ? sql`SELECT h.* FROM houses h
-          JOIN neighborhoods n ON h.neighborhood_id = n.id
-          WHERE n.team_id = ${teamId} AND h.neighborhood_id = ${neighborhoodId}`
-    : sql`SELECT h.* FROM houses h
-          JOIN neighborhoods n ON h.neighborhood_id = n.id
+    ? sql`SELECT ${HOUSE_COLS} FROM houses
+          JOIN neighborhoods n ON houses.neighborhood_id = n.id
+          WHERE n.team_id = ${teamId} AND houses.neighborhood_id = ${neighborhoodId}`
+    : sql`SELECT ${HOUSE_COLS} FROM houses
+          JOIN neighborhoods n ON houses.neighborhood_id = n.id
           WHERE n.team_id = ${teamId}`
   const rows = await db.execute(query)
   return NextResponse.json(rows.rows)
@@ -40,11 +51,15 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   requireRole(session?.user?.role, 'admin', 'manager', 'rep')
   const body = await req.json()
 
-  if (!body.address) return NextResponse.json({ error: 'address required' }, { status: 400 })
+  if (!body.number) return NextResponse.json({ error: 'number required' }, { status: 400 })
+  if (!body.street) return NextResponse.json({ error: 'street required' }, { status: 400 })
+  if (!body.city) return NextResponse.json({ error: 'city required' }, { status: 400 })
+  if (!body.region) return NextResponse.json({ error: 'region required' }, { status: 400 })
+  if (!body.postcode) return NextResponse.json({ error: 'postcode required' }, { status: 400 })
   if (body.lat == null) return NextResponse.json({ error: 'lat required' }, { status: 400 })
   if (body.lng == null) return NextResponse.json({ error: 'lng required' }, { status: 400 })
 
-  const { address, lat, lng } = body
+  const { number, street, unit, city, region, postcode, lat, lng } = body
 
   const neighborhoodResult = await db.execute(
     sql`SELECT id FROM neighborhoods
@@ -54,9 +69,14 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const neighborhoodId = neighborhoodResult.rows[0]?.id ?? null
 
   const [house] = await db.insert(houses).values({
-    address,
-    lat,
-    lng,
+    number,
+    street,
+    unit: unit || null,
+    city,
+    region,
+    postcode,
+    externalId: null,
+    location: sql`ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)`,
     neighborhoodId: neighborhoodId as string | null,
   }).returning()
 

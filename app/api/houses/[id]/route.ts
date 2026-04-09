@@ -14,7 +14,6 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   const role = session!.user!.role
 
   const updates: Partial<typeof houses.$inferInsert> = {}
-  if (body.address !== undefined) updates.address = body.address
   if (body.noSolicitingSign !== undefined) updates.noSolicitingSign = body.noSolicitingSign
   if (body.doNotKnock !== undefined) {
     if (!canSetDoNotKnock(role)) {
