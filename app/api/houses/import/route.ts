@@ -10,22 +10,28 @@ import { sql } from 'drizzle-orm'
 const BATCH_SIZE = 10
 
 async function processAddress(address: string) {
-  const coords = await geocodeAddress(address)
-  if (!coords) return null
+  const result = await geocodeAddress(address)
+  if (!result) return null
 
   const neighborhoodResult = await db.execute(
     sql`SELECT id FROM neighborhoods
-        WHERE ST_Within(ST_SetSRID(ST_Point(${coords.lng}, ${coords.lat}), 4326), boundary)
+        WHERE ST_Within(ST_SetSRID(ST_Point(${result.lng}, ${result.lat}), 4326), boundary)
         LIMIT 1`
   )
   const neighborhoodId = neighborhoodResult.rows[0]?.id as string | null
 
   const [house] = await db.insert(houses).values({
-    address,
-    lat: coords.lat,
-    lng: coords.lng,
+    number: result.number,
+    street: result.street,
+    unit: null,
+    city: result.city,
+    region: result.region,
+    postcode: result.postcode,
+    externalId: null,
+    location: sql`ST_SetSRID(ST_Point(${result.lng}, ${result.lat}), 4326)`,
     neighborhoodId,
   }).onConflictDoNothing().returning()
+
   return house ?? null
 }
 
