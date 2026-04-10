@@ -44,7 +44,7 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
           const house = houses.find(h => h.id === feature.properties?.id)
           if (house) { onHouseClick(house); return }
         }
-        onMapClick?.(e.lngLat.lat, e.lngLat.lng)
+        if (viewport.zoom >= 15) onMapClick?.(e.lngLat.lat, e.lngLat.lng)
       }}
     >
       <NavigationControl position="top-right" />

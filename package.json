@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "cf:build": "next build && npx @cloudflare/next-on-pages",
+    "cf:preview": "npm run cf:build && wrangler pages dev .vercel/output/static",
+    "cf:deploy": "npm run cf:build && wrangler pages deploy .vercel/output/static"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
@@ -36,6 +39,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^20",
     "@types/react": "^19",

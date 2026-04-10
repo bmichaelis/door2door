@@ -1,3 +1,4 @@
+export const runtime = 'edge'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { getRepStats, getManagerStats, getAdminStats } from '@/lib/stats'

@@ -110,7 +110,7 @@ export function NeighborhoodAdminClient({ neighborhoods: initial, teams }: Props
           </div>
           <div>
             <label className="text-sm font-medium block mb-1">Assign to Team</label>
-            <Select value={teamId} onValueChange={setTeamId}>
+            <Select value={teamId} onValueChange={v => setTeamId(v ?? '')}>
               <SelectTrigger className="w-40"><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent>
                 {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
@@ -139,7 +139,7 @@ export function NeighborhoodAdminClient({ neighborhoods: initial, teams }: Props
             </div>
             <div>
               <label className="text-sm font-medium block mb-1">Assign to Team</label>
-              <Select value={teamId} onValueChange={setTeamId}>
+              <Select value={teamId} onValueChange={v => setTeamId(v ?? '')}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
@@ -172,7 +172,7 @@ export function NeighborhoodAdminClient({ neighborhoods: initial, teams }: Props
                 </div>
                 <div>
                   <label className="text-xs font-medium block mb-1">Team</label>
-                  <Select value={editForm.teamId} onValueChange={v => setEditForm(f => ({ ...f, teamId: v }))}>
+                  <Select value={editForm.teamId} onValueChange={v => setEditForm(f => ({ ...f, teamId: v ?? '' }))}>
                     <SelectTrigger className="w-36"><SelectValue placeholder="Unassigned" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">Unassigned</SelectItem>

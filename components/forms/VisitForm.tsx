@@ -72,7 +72,7 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
         <>
           <div>
             <Label>Interest Level</Label>
-            <Select value={interestLevel} onValueChange={setInterestLevel}>
+            <Select value={interestLevel} onValueChange={v => setInterestLevel(v ?? '')}>
               <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="interested">Interested</SelectItem>
@@ -83,7 +83,7 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
           </div>
           <div>
             <Label>Sale Outcome</Label>
-            <Select value={saleOutcome} onValueChange={setSaleOutcome}>
+            <Select value={saleOutcome} onValueChange={v => setSaleOutcome(v ?? '')}>
               <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="sold">Sold</SelectItem>
@@ -96,7 +96,7 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
             <>
               <div>
                 <Label>Product</Label>
-                <Select value={productId} onValueChange={setProductId}>
+                <Select value={productId} onValueChange={v => setProductId(v ?? '')}>
                   <SelectTrigger><SelectValue placeholder="Select product..." /></SelectTrigger>
                   <SelectContent>
                     {products.map(p => (

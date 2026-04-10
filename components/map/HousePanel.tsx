@@ -16,11 +16,12 @@ type Props = {
   house: HouseRow | null
   userRole: string
   onClose: () => void
+  onHouseUpdate?: (id: string, updates: Partial<HouseRow & { lastOutcome?: string | null }>) => void
 }
 
 type View = 'detail' | 'log-visit' | 'new-household'
 
-export function HousePanel({ house, userRole, onClose }: Props) {
+export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
   const [view, setView] = useState<View>('detail')
   const [households, setHouseholds] = useState<Household[]>([])
   const [visits, setVisits] = useState<Visit[]>([])
@@ -77,6 +78,7 @@ export function HousePanel({ house, userRole, onClose }: Props) {
       setError('Failed to save visit. Please try again.')
       return
     }
+    if (house) onHouseUpdate?.(house.id, { lastOutcome: data.saleOutcome ?? null })
     setView('detail')
     fetchData()
   }
@@ -108,6 +110,7 @@ export function HousePanel({ house, userRole, onClose }: Props) {
       setError('Failed to update flag. Please try again.')
       return
     }
+    onHouseUpdate?.(house.id, { [field]: !house[field] })
     fetchData()
   }
 
@@ -205,6 +208,13 @@ export function HousePanel({ house, userRole, onClose }: Props) {
           </div>
         )}
 
+        {view === 'log-visit' && !activeHousehold && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-muted-foreground">No household on record. Add one before logging a visit.</p>
+            <Button size="sm" onClick={() => setView('new-household')}>Add Household</Button>
+            <Button size="sm" variant="ghost" onClick={() => setView('detail')}>Cancel</Button>
+          </div>
+        )}
         {view === 'log-visit' && activeHousehold && (
           <div className="mt-4">
             <VisitForm
