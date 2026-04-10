@@ -32,7 +32,7 @@ export default async function MapPage() {
               WHERE ho.house_id = h.id
               ORDER BY vi.created_at DESC LIMIT 1
             ) v ON true
-            WHERE h.neighborhood_id = ANY(${neighborhoodIds})`
+            WHERE h.neighborhood_id IN (${sql.join(neighborhoodIds.map(id => sql`${id}::uuid`), sql`, `)})`
       )
     : { rows: [] }
 

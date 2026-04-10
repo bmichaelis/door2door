@@ -2,7 +2,6 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from 'react-map-gl/mapbox'
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css'
 
 type Props = {
   onDrawComplete: (polygon: GeoJSON.Polygon) => void
@@ -33,9 +32,13 @@ export function DrawControl({ onDrawComplete }: Props) {
     map.on('draw.update', handleUpdate)
 
     return () => {
-      map.off('draw.create', handleCreate)
-      map.off('draw.update', handleUpdate)
-      map.removeControl(draw)
+      try {
+        map.off('draw.create', handleCreate)
+        map.off('draw.update', handleUpdate)
+        map.removeControl(draw)
+      } catch {
+        // map already unmounted
+      }
     }
   }, [map])
 

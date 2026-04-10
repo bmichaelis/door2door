@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    middlewareClientMaxBodySize: 500 * 1024 * 1024, // 500MB — needed for large GeoJSON imports
+  },
 };
 
 export default nextConfig;

@@ -10,8 +10,8 @@ export default async function NeighborhoodsPage() {
   if (session?.user?.role !== 'admin') redirect('/map')
 
   const rows = await db.execute(
-    sql`SELECT n.id, n.name, n.team_id, t.name as team_name
-        FROM neighborhoods n LEFT JOIN teams t ON n.team_id = t.id ORDER BY n.name`
+    sql`SELECT n.id, n.name, n.city, n.team_id, t.name as team_name
+        FROM neighborhoods n LEFT JOIN teams t ON n.team_id = t.id ORDER BY n.city, n.name`
   )
   const teamsList = await db.select({ id: teams.id, name: teams.name }).from(teams)
 

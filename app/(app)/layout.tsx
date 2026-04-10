@@ -21,6 +21,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {role === 'admin' && (
             <Link href="/admin/import">Import</Link>
           )}
+          {role === 'admin' && (
+            <Link href="/admin/neighborhoods">Neighborhoods</Link>
+          )}
         </nav>
         <form action={async () => { 'use server'; await signOut() }}>
           <Button variant="ghost" size="sm" type="submit">Sign out</Button>

@@ -15,6 +15,7 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   // Update scalar fields via typed Drizzle update (parameterized, no injection risk)
   const scalarUpdates: Partial<typeof neighborhoods.$inferInsert> = {}
   if (body.name !== undefined) scalarUpdates.name = body.name
+  if (body.city !== undefined) scalarUpdates.city = body.city ?? null
   if (body.teamId !== undefined) scalarUpdates.teamId = body.teamId ?? null
 
   if (Object.keys(scalarUpdates).length > 0) {
@@ -44,6 +45,8 @@ export const DELETE = withErrorHandling(async (_req: NextRequest, { params }) =>
   const session = await auth()
   requireRole(session?.user?.role, 'admin')
   const { id } = await params
+  // Unassign houses before deleting to avoid FK violation
+  await db.execute(sql`UPDATE houses SET neighborhood_id = NULL WHERE neighborhood_id = ${id}`)
   await db.delete(neighborhoods).where(eq(neighborhoods.id, id))
   return new NextResponse(null, { status: 204 })
 })

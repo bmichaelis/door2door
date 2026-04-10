@@ -25,9 +25,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     body.boundary?.type === 'Feature' ? body.boundary.geometry : body.boundary
   )
   const rows = await db.execute(
-    sql`INSERT INTO neighborhoods (name, team_id, boundary)
-        VALUES (${body.name}, ${body.teamId ?? null}, ST_GeomFromGeoJSON(${geojson}))
-        RETURNING id, name, team_id, created_at,
+    sql`INSERT INTO neighborhoods (name, city, team_id, boundary)
+        VALUES (${body.name}, ${body.city ?? null}, ${body.teamId ?? null}, ST_GeomFromGeoJSON(${geojson}))
+        RETURNING id, name, city, team_id, created_at,
         ST_AsGeoJSON(boundary)::json as boundary`
   )
   return NextResponse.json(rows.rows[0], { status: 201 })

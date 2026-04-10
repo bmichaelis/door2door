@@ -1,6 +1,6 @@
 'use client'
 import Map, { NavigationControl } from 'react-map-gl/mapbox'
-import 'mapbox-gl/dist/mapbox-gl.css'
+
 import { MAPBOX_TOKEN } from '@/lib/mapbox'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'

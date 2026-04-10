@@ -76,6 +76,7 @@ export const products = pgTable('products', {
 export const neighborhoods = pgTable('neighborhoods', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
+  city: text('city'),
   teamId: uuid('team_id').references(() => teams.id),
   boundary: geometry('boundary'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
