@@ -1,4 +1,5 @@
-import { auth, signOut } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+import { SignOutButton } from './sign-out-button'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -25,9 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link href="/admin/neighborhoods">Neighborhoods</Link>
           )}
         </nav>
-        <form action={async () => { 'use server'; await signOut() }}>
-          <Button variant="ghost" size="sm" type="submit">Sign out</Button>
-        </form>
+        <SignOutButton />
       </header>
       <main className="flex-1">{children}</main>
     </div>
