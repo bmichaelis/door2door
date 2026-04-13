@@ -4,8 +4,8 @@ import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import { db } from '@/lib/db'
 import { users, accounts, sessions, verificationTokens } from '@/lib/db/schema'
 
-if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
-  throw new Error('AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET are required')
+if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET || !process.env.AUTH_SECRET) {
+  throw new Error('AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, and AUTH_SECRET are required')
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({

@@ -4,6 +4,6 @@ import { Button } from '@/components/ui/button'
 
 export function LoginButton() {
   return (
-    <Button onClick={() => signIn('google')}>Sign in with Google</Button>
+    <Button onClick={() => signIn('google', { callbackUrl: '/map' })}>Sign in with Google</Button>
   )
 }

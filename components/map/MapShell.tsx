@@ -1,7 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
-import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useMemo, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { HousePanel } from './HousePanel'
 import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
@@ -12,15 +11,31 @@ const MapView = dynamic(() => import('./MapView'), { ssr: false })
 export type HouseWithOutcome = HouseRow & { lastOutcome?: string | null }
 
 type Props = {
-  neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon })[]
-  houses: HouseWithOutcome[]
   userRole: string
 }
 
-export function MapShell({ neighborhoods, houses, userRole }: Props) {
-  const router = useRouter()
-  // Optimistic overrides — merged on top of server-fetched houses.
-  // Keeping houses as a prop (not state) so router.refresh() still delivers new data.
+export function MapShell({ userRole }: Props) {
+  const [neighborhoods, setNeighborhoods] = useState<(Neighborhood & { boundary: GeoJSON.Polygon })[]>([])
+  const [houses, setHouses] = useState<HouseWithOutcome[]>([])
+  const [dataLoading, setDataLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/neighborhoods')
+      .then(r => r.json())
+      .then(async (nbhds: (Neighborhood & { boundary: GeoJSON.Polygon })[]) => {
+        setNeighborhoods(nbhds)
+        if (!nbhds.length) { setDataLoading(false); return }
+        const houseArrays = await Promise.all(
+          nbhds.map((n: Neighborhood) =>
+            fetch(`/api/houses?neighborhoodId=${n.id}`).then(r => r.json())
+          )
+        )
+        setHouses(houseArrays.flat())
+        setDataLoading(false)
+      })
+      .catch(() => setDataLoading(false))
+  }, [])
+
   const [overrides, setOverrides] = useState<Map<string, Partial<HouseWithOutcome>>>(new Map())
   const [selectedHouse, setSelectedHouse] = useState<HouseWithOutcome | null>(null)
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -53,11 +68,21 @@ export function MapShell({ neighborhoods, houses, userRole }: Props) {
       return
     }
     setPendingLocation(null)
-    router.refresh()
+    fetch('/api/neighborhoods')
+      .then(r => r.json())
+      .then((nbhds: Neighborhood[]) =>
+        Promise.all(nbhds.map(n => fetch(`/api/houses?neighborhoodId=${n.id}`).then(r => r.json())))
+      )
+      .then(arrays => setHouses(arrays.flat()))
   }
 
   return (
     <div className="relative h-[calc(100vh-56px)] w-full">
+      {dataLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
+          <p className="text-sm text-muted-foreground">Loading map data…</p>
+        </div>
+      )}
       <MapView
         neighborhoods={neighborhoods}
         houses={effectiveHouses}
