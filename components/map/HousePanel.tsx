@@ -1,12 +1,15 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Dialog, DialogContent, DialogHeader, DialogBody, DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { VisitForm, type VisitFormData } from '@/components/forms/VisitForm'
 import { HouseholdForm } from '@/components/forms/HouseholdForm'
 import type { HouseRow } from '@/lib/db/schema'
 import { formatAddress } from '@/lib/houses'
+import { ChevronLeftIcon } from 'lucide-react'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
@@ -20,6 +23,18 @@ type Props = {
 }
 
 type View = 'detail' | 'log-visit' | 'new-household'
+
+const OUTCOME_STYLES: Record<string, string> = {
+  sold: 'bg-green-100 text-green-800',
+  follow_up: 'bg-blue-100 text-blue-800',
+  not_sold: 'bg-red-100 text-red-800',
+}
+
+const CONTACT_LABEL: Record<string, string> = {
+  answered: 'Answered',
+  not_home: 'Not Home',
+  refused: 'Refused',
+}
 
 export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
   const [view, setView] = useState<View>('detail')
@@ -43,11 +58,9 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
       ])
       if (!hRes.ok) throw new Error('Failed to load household data')
       if (!pRes.ok) throw new Error('Failed to load products')
-
       const hh: Household[] = await hRes.json()
       setHouseholds(hh)
       setProducts(await pRes.json())
-
       const active = hh.find(h => h.active)
       if (active) {
         const vRes = await fetch(`/api/visits?householdId=${active.id}`)
@@ -72,13 +85,13 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
 
   async function handleLogVisitClick() {
     if (!house) return
-    if ((house.doNotKnock || house.noSolicitingSign) && !window.confirm('This house is flagged. Are you sure you want to log a visit?')) return
+    if ((house.doNotKnock || house.noSolicitingSign) &&
+      !window.confirm('This house is flagged. Are you sure you want to log a visit?')) return
     if (activeHousehold) {
       setVisitHouseholdId(activeHousehold.id)
       setView('log-visit')
       return
     }
-    // No household on record — create an anonymous one silently
     setLoading(true)
     setError(null)
     try {
@@ -105,10 +118,7 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    if (!res.ok) {
-      setError('Failed to save visit. Please try again.')
-      return
-    }
+    if (!res.ok) { setError('Failed to save visit. Please try again.'); return }
     if (house) onHouseUpdate?.(house.id, { lastOutcome: data.saleOutcome ?? null })
     setView('detail')
     setVisitHouseholdId(null)
@@ -121,108 +131,134 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    if (!res.ok) {
-      setError('Failed to save household. Please try again.')
-      return
-    }
+    if (!res.ok) { setError('Failed to save household. Please try again.'); return }
     setView('detail')
     fetchData()
   }
 
   async function handleFlagToggle(field: 'noSolicitingSign' | 'doNotKnock') {
     if (!house) return
-    const confirmed = window.confirm('Are you sure you want to toggle this flag? This will warn all reps.')
-    if (!confirmed) return
+    if (!window.confirm('Are you sure you want to toggle this flag? This will warn all reps.')) return
     const res = await fetch(`/api/houses/${house.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: !house[field] }),
     })
-    if (!res.ok) {
-      setError('Failed to update flag. Please try again.')
-      return
-    }
+    if (!res.ok) { setError('Failed to update flag. Please try again.'); return }
     onHouseUpdate?.(house.id, { [field]: !house[field] })
     fetchData()
   }
 
-  if (!house) return null
+  const isFlagged = house ? (house.doNotKnock || house.noSolicitingSign) : false
 
-  const isFlagged = house.doNotKnock || house.noSolicitingSign
+  const viewTitle =
+    view === 'log-visit' ? 'Log Visit' :
+    view === 'new-household' ? 'New Family Moved In' :
+    null
 
   return (
-    <Sheet open={!!house} onOpenChange={(open: boolean) => !open && onClose()}>
-      <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="text-left">
-            {formatAddress(house)}
-            {isFlagged && <Badge variant="destructive" className="ml-2">Flagged</Badge>}
-          </SheetTitle>
-        </SheetHeader>
+    <Dialog open={!!house} onOpenChange={open => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          {view !== 'detail' && (
+            <button
+              onClick={() => { setView('detail'); setVisitHouseholdId(null) }}
+              className="mb-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronLeftIcon className="size-3" />
+              Back
+            </button>
+          )}
+          <DialogTitle>
+            {view === 'detail' ? (house ? formatAddress(house) : '') : viewTitle}
+          </DialogTitle>
+          {view === 'detail' && house && (
+            <p className="text-sm text-muted-foreground">{house.street}, {house.city}</p>
+          )}
+          {isFlagged && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {house?.doNotKnock && <Badge variant="destructive">Do Not Knock</Badge>}
+              {house?.noSolicitingSign && <Badge variant="destructive">No Soliciting</Badge>}
+            </div>
+          )}
+        </DialogHeader>
 
-        {error && (
-          <div className="my-3 rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
+        <DialogBody>
+          {error && (
+            <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
-        {isFlagged && (
-          <div className="my-3 rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-            {house.doNotKnock && <p>⚠️ Do Not Knock — this address is on a no-contact list.</p>}
-            {house.noSolicitingSign && <p>⚠️ No Soliciting sign observed on property.</p>}
-          </div>
-        )}
-
-        {view === 'detail' && (
-          <div className="mt-4 space-y-4">
-            {activeHousehold && (
-              <div>
-                <p className="text-sm font-medium">Current household: {activeHousehold.surname ?? 'Unknown'}</p>
-                {activeHousehold.headOfHouseholdName && (
-                  <p className="text-sm text-muted-foreground">{activeHousehold.headOfHouseholdName}</p>
+          {view === 'detail' && (
+            <div className="space-y-5">
+              {/* Household */}
+              <div className="rounded-xl bg-muted/50 px-4 py-3">
+                {activeHousehold ? (
+                  <>
+                    <p className="font-medium">{activeHousehold.surname ?? 'Unknown family'}</p>
+                    {activeHousehold.headOfHouseholdName && (
+                      <p className="text-sm text-muted-foreground">{activeHousehold.headOfHouseholdName}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No household on record</p>
                 )}
               </div>
-            )}
 
-            <div className="flex gap-2 flex-wrap">
-              <Button size="sm" onClick={handleLogVisitClick} disabled={loading}>
-                Log Visit
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setView('new-household')}>
-                New Family Moved In
-              </Button>
-              {userRole === 'rep' && (
-                <Button size="sm" variant="outline" onClick={() => handleFlagToggle('noSolicitingSign')}>
-                  {house.noSolicitingSign ? 'Clear No Soliciting' : 'Mark No Soliciting Sign'}
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleLogVisitClick} disabled={loading}>
+                  Log Visit
                 </Button>
-              )}
-              {(userRole === 'admin' || userRole === 'manager') && (
-                <Button size="sm" variant="outline" onClick={() => handleFlagToggle('doNotKnock')}>
-                  {house.doNotKnock ? 'Clear Do Not Knock' : 'Mark Do Not Knock'}
+                <Button variant="outline" onClick={() => setView('new-household')}>
+                  New Family Moved In
                 </Button>
-              )}
-            </div>
+                {userRole === 'rep' && (
+                  <Button size="sm" variant="outline" onClick={() => handleFlagToggle('noSolicitingSign')}>
+                    {house?.noSolicitingSign ? 'Clear No Soliciting' : 'No Soliciting Sign'}
+                  </Button>
+                )}
+                {(userRole === 'admin' || userRole === 'manager') && (
+                  <Button size="sm" variant="outline" onClick={() => handleFlagToggle('doNotKnock')}>
+                    {house?.doNotKnock ? 'Clear Do Not Knock' : 'Mark Do Not Knock'}
+                  </Button>
+                )}
+              </div>
 
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            ) : (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Visit History</h3>
-                {visits.length === 0 && <p className="text-sm text-muted-foreground">No visits yet.</p>}
-                {visits.map(v => (
-                  <div key={v.id} className="rounded border p-3 text-sm">
-                    <div className="flex justify-between">
-                      <Badge variant="outline">{v.contactStatus}</Badge>
-                      <span className="text-muted-foreground">{new Date(v.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    {v.saleOutcome && <p className="mt-1">Outcome: <strong>{v.saleOutcome}</strong></p>}
-                    {v.notes && <p className="mt-1 text-muted-foreground">{v.notes}</p>}
-                  </div>
-                ))}
+              {/* Visit history */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Visit History</p>
+                {loading ? (
+                  <p className="text-sm text-muted-foreground">Loading…</p>
+                ) : visits.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No visits yet.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {visits.map(v => (
+                      <li key={v.id} className="flex items-start gap-3 rounded-xl border bg-background px-4 py-3 text-sm">
+                        <div className="flex-1 space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{CONTACT_LABEL[v.contactStatus] ?? v.contactStatus}</span>
+                            {v.saleOutcome && (
+                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${OUTCOME_STYLES[v.saleOutcome] ?? ''}`}>
+                                {v.saleOutcome.replace('_', ' ')}
+                              </span>
+                            )}
+                          </div>
+                          {v.notes && <p className="text-muted-foreground">{v.notes}</p>}
+                        </div>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {new Date(v.createdAt).toLocaleDateString()}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 {households.filter(h => !h.active).length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground">Previous Households</h3>
+                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Households</p>
                     {households.filter(h => !h.active).map(h => (
                       <p key={h.id} className="text-sm text-muted-foreground">
                         {h.surname ?? 'Unknown'} — since {new Date(h.createdAt).toLocaleDateString()}
@@ -231,31 +267,27 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {view === 'log-visit' && visitHouseholdId && (
-          <div className="mt-4">
+          {view === 'log-visit' && visitHouseholdId && (
             <VisitForm
               householdId={visitHouseholdId}
               products={products}
               onSubmit={handleLogVisit}
               onCancel={() => { setView('detail'); setVisitHouseholdId(null) }}
             />
-          </div>
-        )}
+          )}
 
-        {view === 'new-household' && (
-          <div className="mt-4">
+          {view === 'new-household' && house && (
             <HouseholdForm
               houseId={house.id}
               onSubmit={handleNewHousehold}
               onCancel={() => setView('detail')}
             />
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+          )}
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   )
 }

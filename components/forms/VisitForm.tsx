@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 type Product = { id: string; name: string }
 
@@ -25,6 +26,36 @@ export type VisitFormData = {
   productId?: string
   installDate?: string
   serviceDate?: string
+}
+
+function OptionGroup<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string; color?: string }[]
+  value: T | ''
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex gap-2">
+      {options.map(o => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={cn(
+            'flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all',
+            value === o.value
+              ? o.color ?? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground hover:bg-muted'
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) {
@@ -55,79 +86,91 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
     setLoading(false)
   }
 
+  const answered = contactStatus === 'answered'
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label>Contact Status</Label>
-        <Select value={contactStatus} onValueChange={v => setContactStatus(v as any)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="answered">Answered</SelectItem>
-            <SelectItem value="not_home">Not Home</SelectItem>
-            <SelectItem value="refused">Refused</SelectItem>
-          </SelectContent>
-        </Select>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</Label>
+        <OptionGroup
+          options={[
+            { value: 'answered', label: 'Answered' },
+            { value: 'not_home', label: 'Not Home' },
+            { value: 'refused', label: 'Refused', color: 'border-destructive/40 bg-destructive/10 text-destructive' },
+          ]}
+          value={contactStatus}
+          onChange={v => { setContactStatus(v); setInterestLevel(''); setSaleOutcome('') }}
+        />
       </div>
-      {contactStatus === 'answered' && (
+
+      {answered && (
         <>
-          <div>
-            <Label>Interest Level</Label>
-            <Select value={interestLevel} onValueChange={v => setInterestLevel(v ?? '')}>
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="interested">Interested</SelectItem>
-                <SelectItem value="maybe">Maybe</SelectItem>
-                <SelectItem value="not_interested">Not Interested</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Interest</Label>
+            <OptionGroup
+              options={[
+                { value: 'interested', label: 'Interested', color: 'border-green-500/40 bg-green-50 text-green-700' },
+                { value: 'maybe', label: 'Maybe', color: 'border-yellow-500/40 bg-yellow-50 text-yellow-700' },
+                { value: 'not_interested', label: 'Not Interested', color: 'border-destructive/40 bg-destructive/10 text-destructive' },
+              ]}
+              value={interestLevel}
+              onChange={setInterestLevel}
+            />
           </div>
-          <div>
-            <Label>Sale Outcome</Label>
-            <Select value={saleOutcome} onValueChange={v => setSaleOutcome(v ?? '')}>
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sold">Sold</SelectItem>
-                <SelectItem value="not_sold">Not Sold</SelectItem>
-                <SelectItem value="follow_up">Follow Up</SelectItem>
-              </SelectContent>
-            </Select>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Outcome</Label>
+            <OptionGroup
+              options={[
+                { value: 'sold', label: 'Sold', color: 'border-green-500/40 bg-green-50 text-green-700' },
+                { value: 'follow_up', label: 'Follow Up', color: 'border-blue-500/40 bg-blue-50 text-blue-700' },
+                { value: 'not_sold', label: 'Not Sold', color: 'border-destructive/40 bg-destructive/10 text-destructive' },
+              ]}
+              value={saleOutcome}
+              onChange={setSaleOutcome}
+            />
           </div>
+
+          {saleOutcome === 'sold' && products.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Product</Label>
+              <Select value={productId} onValueChange={v => setProductId(v ?? '')}>
+                <SelectTrigger><SelectValue placeholder="Select product..." /></SelectTrigger>
+                <SelectContent>
+                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {saleOutcome === 'sold' && (
-            <>
-              <div>
-                <Label>Product</Label>
-                <Select value={productId} onValueChange={v => setProductId(v ?? '')}>
-                  <SelectTrigger><SelectValue placeholder="Select product..." /></SelectTrigger>
-                  <SelectContent>
-                    {products.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Install Date</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Install Date</Label>
                 <Input type="date" value={installDate} onChange={e => setInstallDate(e.target.value)} />
               </div>
-              <div>
-                <Label>Service Date</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Service Date</Label>
                 <Input type="date" value={serviceDate} onChange={e => setServiceDate(e.target.value)} />
               </div>
-            </>
+            </div>
           )}
         </>
       )}
-      <div>
-        <Label>Notes</Label>
-        <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</Label>
+        <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Optional notes..." />
       </div>
-      <div>
-        <Label>Follow-up Date</Label>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Follow-up Date</Label>
         <Input type="datetime-local" value={followUpAt} onChange={e => setFollowUpAt(e.target.value)} />
       </div>
-      <div className="flex gap-2">
+
+      <div className="flex gap-2 pt-1">
         <Button type="submit" disabled={loading} className="flex-1">
-          {loading ? 'Saving...' : 'Log Visit'}
+          {loading ? 'Saving…' : 'Save Visit'}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
       </div>

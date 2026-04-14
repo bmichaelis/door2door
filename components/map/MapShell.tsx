@@ -1,7 +1,7 @@
 'use client'
 import dynamic from 'next/dynamic'
 import { useState, useMemo, useEffect } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog'
 import { HousePanel } from './HousePanel'
 import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
 import type { HouseRow, Neighborhood } from '@/lib/db/schema'
@@ -98,26 +98,26 @@ export function MapShell({ userRole }: Props) {
         onClose={() => setSelectedHouse(null)}
         onHouseUpdate={handleHouseUpdate}
       />
-      <Sheet open={!!pendingLocation} onOpenChange={(open: boolean) => !open && (setPendingLocation(null), setAddError(null))}>
-        <SheetContent side="bottom" className="h-auto">
-          <SheetHeader>
-            <SheetTitle>Add House</SheetTitle>
-          </SheetHeader>
-          {addError && (
-            <p className="mt-2 text-sm text-destructive">{addError}</p>
-          )}
-          {pendingLocation && (
-            <div className="mt-4">
+      <Dialog open={!!pendingLocation} onOpenChange={open => !open && (setPendingLocation(null), setAddError(null))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add House</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            {addError && (
+              <p className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">{addError}</p>
+            )}
+            {pendingLocation && (
               <HouseForm
                 lat={pendingLocation.lat}
                 lng={pendingLocation.lng}
                 onSubmit={handleAddHouse}
                 onCancel={() => { setPendingLocation(null); setAddError(null) }}
               />
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+            )}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
