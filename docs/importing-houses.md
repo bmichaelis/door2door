@@ -21,9 +21,7 @@ Optional: `unit`, `city`, `region`, `postcode`, `hash` (used as `external_id` fo
 
 ### Where to get the data
 
-**OpenAddresses** (openaddresses.io) publishes free, pre-geocoded address data for Utah in exactly this format. Download the Utah dataset, filter to the county you need, and upload. The `hash` field in their output maps directly to our `external_id`, so re-importing the same file is safe (duplicates are skipped).
-
-**Utah SGID** address points can also be exported as GeoJSON from the Neon console after staging (see `backfilling-addresses.md`), but OpenAddresses is simpler for bulk house imports.
+**OpenAddresses** (openaddresses.io) is the source used for the initial Provo data load. It publishes free, pre-geocoded address data for Utah in exactly this format. Download the Utah dataset, filter to the county you need, and upload. The `hash` field in their output maps directly to our `external_id`, so re-importing the same file is safe (duplicates are skipped).
 
 ### Steps
 
