@@ -92,6 +92,47 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Remove cross-source duplicates: same name within 100m, keep the record
+    // with the most complete data, preferring Overture over OSM on ties.
+    await db.execute(sql`
+      DELETE FROM businesses b
+      WHERE EXISTS (
+        SELECT 1 FROM businesses better
+        WHERE lower(trim(better.name)) = lower(trim(b.name))
+          AND better.id != b.id
+          AND ST_DWithin(better.location::geography, b.location::geography, 100)
+          AND (
+            (CASE WHEN better.phone   IS NOT NULL THEN 1 ELSE 0 END +
+             CASE WHEN better.website IS NOT NULL THEN 1 ELSE 0 END +
+             CASE WHEN better.number  IS NOT NULL THEN 1 ELSE 0 END +
+             CASE WHEN better.street  IS NOT NULL THEN 1 ELSE 0 END)
+            >
+            (CASE WHEN b.phone   IS NOT NULL THEN 1 ELSE 0 END +
+             CASE WHEN b.website IS NOT NULL THEN 1 ELSE 0 END +
+             CASE WHEN b.number  IS NOT NULL THEN 1 ELSE 0 END +
+             CASE WHEN b.street  IS NOT NULL THEN 1 ELSE 0 END)
+            OR (
+              (CASE WHEN better.phone   IS NOT NULL THEN 1 ELSE 0 END +
+               CASE WHEN better.website IS NOT NULL THEN 1 ELSE 0 END +
+               CASE WHEN better.number  IS NOT NULL THEN 1 ELSE 0 END +
+               CASE WHEN better.street  IS NOT NULL THEN 1 ELSE 0 END)
+              =
+              (CASE WHEN b.phone   IS NOT NULL THEN 1 ELSE 0 END +
+               CASE WHEN b.website IS NOT NULL THEN 1 ELSE 0 END +
+               CASE WHEN b.number  IS NOT NULL THEN 1 ELSE 0 END +
+               CASE WHEN b.street  IS NOT NULL THEN 1 ELSE 0 END)
+              AND (
+                (better.external_id LIKE 'overture:%' AND b.external_id NOT LIKE 'overture:%')
+                OR (
+                  (better.external_id LIKE 'overture:%') = (b.external_id LIKE 'overture:%')
+                  AND better.id::text > b.id::text
+                )
+              )
+            )
+          )
+      )
+    `)
+
     return NextResponse.json({ imported: valid.length, skipped, total: items.length })
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error'
