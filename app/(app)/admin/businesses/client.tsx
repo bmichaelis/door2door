@@ -70,8 +70,9 @@ export function BusinessImportClient() {
     setProgress('Querying OpenStreetMap…')
 
     const query = `
-[out:json][timeout:60];
-area["name"="${city}"]["admin_level"~"8|6"]["is_in:state"="${state}"]->.searchArea;
+[out:json][timeout:90];
+area["name"="${state}"]["admin_level"="4"]->.stateArea;
+area["name"="${city}"]["admin_level"~"8|6"](area.stateArea)->.searchArea;
 (
   node["shop"](area.searchArea);
   node["amenity"](area.searchArea);
@@ -93,7 +94,10 @@ out center tags;
         method: 'POST',
         body: query,
       })
-      if (!res.ok) throw new Error(`Overpass API error: ${res.status}`)
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Overpass API error ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}`)
+      }
       osmData = await res.json()
     } catch (e) {
       setStatus('error')
@@ -102,8 +106,13 @@ out center tags;
     }
 
     const elements: any[] = osmData.elements ?? []
+    if (elements.length === 0) {
+      setStatus('error')
+      setMessage(`No results from OpenStreetMap. Check that "${city}" and "${state}" match OSM names exactly (e.g. "Utah" not "UT").`)
+      return
+    }
     const parsed = elements.map(parseOSMElement).filter(Boolean) as BusinessInput[]
-    setProgress(`Found ${parsed.length} named businesses. Importing…`)
+    setProgress(`Found ${parsed.length} named businesses out of ${elements.length} elements. Importing…`)
     setStatus('importing')
 
     let totalImported = 0
