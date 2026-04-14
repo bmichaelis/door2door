@@ -4,11 +4,12 @@ import { useState, useMemo, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog'
 import { HousePanel } from './HousePanel'
 import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
-import type { HouseRow, Neighborhood } from '@/lib/db/schema'
+import type { Neighborhood } from '@/lib/db/schema'
+import { type HouseWithOutcome, parseHouseNumber } from '@/lib/houses'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
-export type HouseWithOutcome = HouseRow & { lastOutcome?: string | null }
+export type { HouseWithOutcome }
 
 type Props = {
   userRole: string
@@ -45,6 +46,18 @@ export function MapShell({ userRole }: Props) {
     () => houses.map(h => { const o = overrides.get(h.id); return o ? { ...h, ...o } : h }),
     [houses, overrides]
   )
+
+  const adjacentHouses = useMemo(() => {
+    if (!selectedHouse) return { prev: null, next: null }
+    const streetHouses = effectiveHouses
+      .filter(h => h.street === selectedHouse.street && h.neighborhoodId === selectedHouse.neighborhoodId)
+      .sort((a, b) => parseHouseNumber(a.number) - parseHouseNumber(b.number))
+    const idx = streetHouses.findIndex(h => h.id === selectedHouse.id)
+    return {
+      prev: idx > 0 ? streetHouses[idx - 1] : null,
+      next: idx < streetHouses.length - 1 ? streetHouses[idx + 1] : null,
+    }
+  }, [selectedHouse, effectiveHouses])
 
   function handleHouseUpdate(id: string, updates: Partial<HouseWithOutcome>) {
     setOverrides(prev => {
@@ -97,6 +110,9 @@ export function MapShell({ userRole }: Props) {
         userRole={userRole}
         onClose={() => setSelectedHouse(null)}
         onHouseUpdate={handleHouseUpdate}
+        prevHouse={adjacentHouses.prev}
+        nextHouse={adjacentHouses.next}
+        onHouseChange={setSelectedHouse}
       />
       <Dialog open={!!pendingLocation} onOpenChange={open => !open && (setPendingLocation(null), setAddError(null))}>
         <DialogContent>

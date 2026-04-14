@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Dialog, DialogContent, DialogHeader, DialogBody, DialogTitle,
 } from '@/components/ui/dialog'
@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { VisitForm, type VisitFormData } from '@/components/forms/VisitForm'
 import { HouseholdForm } from '@/components/forms/HouseholdForm'
 import type { HouseRow } from '@/lib/db/schema'
-import { formatAddress } from '@/lib/houses'
-import { ChevronLeftIcon } from 'lucide-react'
+import { formatAddress, type HouseWithOutcome } from '@/lib/houses'
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
@@ -20,6 +20,9 @@ type Props = {
   userRole: string
   onClose: () => void
   onHouseUpdate?: (id: string, updates: Partial<HouseRow & { lastOutcome?: string | null }>) => void
+  prevHouse?: HouseWithOutcome | null
+  nextHouse?: HouseWithOutcome | null
+  onHouseChange?: (house: HouseWithOutcome) => void
 }
 
 type View = 'detail' | 'log-visit' | 'new-household'
@@ -36,7 +39,7 @@ const CONTACT_LABEL: Record<string, string> = {
   refused: 'Refused',
 }
 
-export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
+export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse, nextHouse, onHouseChange }: Props) {
   const [view, setView] = useState<View>('detail')
   const [households, setHouseholds] = useState<Household[]>([])
   const [visits, setVisits] = useState<Visit[]>([])
@@ -151,6 +154,24 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
 
   const isFlagged = house ? (house.doNotKnock || house.noSolicitingSign) : false
 
+  // Swipe navigation
+  const swipeOrigin = useRef<{ x: number; y: number } | null>(null)
+
+  function handlePointerDown(e: React.PointerEvent) {
+    if (view !== 'detail') return
+    swipeOrigin.current = { x: e.clientX, y: e.clientY }
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    if (!swipeOrigin.current || view !== 'detail') return
+    const dx = e.clientX - swipeOrigin.current.x
+    const dy = e.clientY - swipeOrigin.current.y
+    swipeOrigin.current = null
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return
+    if (dx < 0 && nextHouse) onHouseChange?.(nextHouse)
+    if (dx > 0 && prevHouse) onHouseChange?.(prevHouse)
+  }
+
   const viewTitle =
     view === 'log-visit' ? 'Log Visit' :
     view === 'new-household' ? 'New Family Moved In' :
@@ -160,7 +181,7 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
     <Dialog open={!!house} onOpenChange={open => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          {view !== 'detail' && (
+          {view !== 'detail' ? (
             <button
               onClick={() => { setView('detail'); setVisitHouseholdId(null) }}
               className="mb-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -168,12 +189,33 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
               <ChevronLeftIcon className="size-3" />
               Back
             </button>
+          ) : (prevHouse || nextHouse) && (
+            <div className="mb-1.5 flex items-center justify-between">
+              {prevHouse ? (
+                <button
+                  onClick={() => onHouseChange?.(prevHouse)}
+                  className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronLeftIcon className="size-3" />
+                  {prevHouse.number}
+                </button>
+              ) : <span />}
+              {nextHouse ? (
+                <button
+                  onClick={() => onHouseChange?.(nextHouse)}
+                  className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {nextHouse.number}
+                  <ChevronRightIcon className="size-3" />
+                </button>
+              ) : <span />}
+            </div>
           )}
           <DialogTitle>
-            {view === 'detail' ? (house ? formatAddress(house) : '') : viewTitle}
+            {view === 'detail' ? (house ? `${house.number} ${house.street}` : '') : viewTitle}
           </DialogTitle>
           {view === 'detail' && house && (
-            <p className="text-sm text-muted-foreground">{house.street}, {house.city}</p>
+            <p className="text-sm text-muted-foreground">{house.city}, {house.region}</p>
           )}
           {isFlagged && (
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -183,7 +225,10 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
           )}
         </DialogHeader>
 
-        <DialogBody>
+        <DialogBody
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+        >
           {error && (
             <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}

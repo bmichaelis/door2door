@@ -1,3 +1,13 @@
+import type { HouseRow } from '@/lib/db/schema'
+
+export type HouseWithOutcome = HouseRow & { lastOutcome?: string | null }
+
+/** Parse the leading integer from a house number like "123A" or "123-125". */
+export function parseHouseNumber(num: string): number {
+  const m = num.match(/^(\d+)/)
+  return m ? parseInt(m[1], 10) : 0
+}
+
 export function formatAddress(house: {
   number: string
   street: string
