@@ -1,6 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog'
 import { HousePanel } from './HousePanel'
 import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
@@ -24,6 +24,30 @@ export function MapShell({ userRole }: Props) {
   const [businesses, setBusinesses] = useState<BusinessRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
   const [layers, setLayers] = useState<LayerVisibility>({ homes: true, businesses: true })
+  const [lastCenter, setLastCenter] = useState<{ lat: number; lng: number } | undefined>()
+  const saveLocationTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    fetch('/api/users/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.lastLat != null && data.lastLng != null) {
+          setLastCenter({ lat: data.lastLat, lng: data.lastLng })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleViewportChange = useCallback((lat: number, lng: number) => {
+    clearTimeout(saveLocationTimeout.current)
+    saveLocationTimeout.current = setTimeout(() => {
+      fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lastLat: lat, lastLng: lng }),
+      }).catch(() => {})
+    }, 5000)
+  }, [])
 
   useEffect(() => {
     fetch('/api/neighborhoods')
@@ -111,6 +135,7 @@ export function MapShell({ userRole }: Props) {
         houses={effectiveHouses}
         businesses={businesses}
         layers={layers}
+        initialCenter={lastCenter}
         onHouseClick={house => { setSelectedBusiness(null); setSelectedHouse(house) }}
         onBusinessClick={business => { setSelectedHouse(null); setSelectedBusiness(business) }}
         onMapClick={(lat, lng) => {
@@ -118,6 +143,7 @@ export function MapShell({ userRole }: Props) {
           setSelectedBusiness(null)
           setPendingLocation({ lat, lng })
         }}
+        onViewportChange={handleViewportChange}
       />
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
         {(['homes', 'businesses'] as const).map(key => (

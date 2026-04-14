@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, text, boolean, timestamp, integer, primaryKey
+  pgTable, uuid, text, boolean, timestamp, integer, primaryKey, doublePrecision
 } from 'drizzle-orm/pg-core'
 import { customType } from 'drizzle-orm/pg-core'
 
@@ -32,6 +32,8 @@ export const users = pgTable('users', {
   image: text('image'),
   role: text('role', { enum: ['admin', 'manager', 'rep'] }),
   teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }),
+  lastLat: doublePrecision('last_lat'),
+  lastLng: doublePrecision('last_lng'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

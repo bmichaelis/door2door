@@ -16,16 +16,18 @@ type Props = {
   houses: HouseRow[]
   businesses: BusinessRow[]
   layers: LayerVisibility
+  initialCenter?: { lat: number; lng: number }
   onHouseClick: (house: HouseRow) => void
   onBusinessClick?: (business: BusinessRow) => void
   onMapClick?: (lat: number, lng: number) => void
+  onViewportChange?: (lat: number, lng: number) => void
 }
 
-export default function MapView({ neighborhoods, houses, businesses, layers, onHouseClick, onBusinessClick, onMapClick }: Props) {
+export default function MapView({ neighborhoods, houses, businesses, layers, initialCenter, onHouseClick, onBusinessClick, onMapClick, onViewportChange }: Props) {
   const [viewport, setViewport] = useState({
-    longitude: -98.5795,
-    latitude: 39.8283,
-    zoom: 10,
+    longitude: initialCenter?.lng ?? -98.5795,
+    latitude: initialCenter?.lat ?? 39.8283,
+    zoom: initialCenter ? 13 : 10,
   })
   const [mapStyle, setMapStyle] = useState<MapStyle>('streets')
 
@@ -39,7 +41,10 @@ export default function MapView({ neighborhoods, houses, businesses, layers, onH
   return (
     <Map
       {...viewport}
-      onMove={e => setViewport(e.viewState)}
+      onMove={e => {
+        setViewport(e.viewState)
+        onViewportChange?.(e.viewState.latitude, e.viewState.longitude)
+      }}
       mapboxAccessToken={MAPBOX_TOKEN}
       mapStyle={MAP_STYLE_URLS[mapStyle]}
       style={{ width: '100%', height: '100%' }}
