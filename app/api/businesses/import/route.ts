@@ -4,7 +4,6 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { businesses } from '@/lib/db/schema'
 import { requireRole } from '@/lib/permissions'
-import { withErrorHandling } from '@/lib/api'
 import { sql } from 'drizzle-orm'
 
 type BusinessInput = {
@@ -23,46 +22,45 @@ type BusinessInput = {
   lng: number
 }
 
-export const POST = withErrorHandling(async (req: NextRequest) => {
-  const session = await auth()
-  requireRole(session?.user?.role, 'admin')
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth()
+    requireRole(session?.user?.role, 'admin')
 
-  const items: BusinessInput[] = await req.json()
-  if (!Array.isArray(items) || items.length === 0) {
-    return NextResponse.json({ error: 'Expected non-empty array' }, { status: 400 })
-  }
+    const items: BusinessInput[] = await req.json()
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Expected non-empty array' }, { status: 400 })
+    }
 
-  let imported = 0
-  let skipped = 0
+    const valid = items.filter(i => i.name && i.lat != null && i.lng != null)
+    const skipped = items.length - valid.length
 
-  for (const item of items) {
-    if (!item.name || item.lat == null || item.lng == null) { skipped++; continue }
+    if (valid.length === 0) {
+      return NextResponse.json({ imported: 0, skipped, total: items.length })
+    }
 
-    // Assign to neighborhood if location falls within one
-    const nbhd = await db.execute(
-      sql`SELECT id FROM neighborhoods
-          WHERE ST_Within(ST_SetSRID(ST_Point(${item.lng}, ${item.lat}), 4326), boundary)
-          LIMIT 1`
+    // Single query to find neighborhood for each coordinate
+    const valuesList = valid.map((item, i) =>
+      sql`(${i}, ${item.lng}::float8, ${item.lat}::float8)`
     )
-    const neighborhoodId = (nbhd.rows[0]?.id as string) ?? null
+    const valuesClause = sql.join(valuesList, sql`, `)
 
-    await db.insert(businesses).values({
-      name: item.name,
-      type: item.type,
-      category: item.category,
-      number: item.number,
-      street: item.street,
-      city: item.city,
-      region: item.region,
-      postcode: item.postcode,
-      phone: item.phone,
-      website: item.website,
-      externalId: item.externalId,
-      location: sql`ST_SetSRID(ST_Point(${item.lng}, ${item.lat}), 4326)`,
-      neighborhoodId,
-    }).onConflictDoUpdate({
-      target: businesses.externalId,
-      set: {
+    const nbhdResult = await db.execute(sql`
+      WITH coords(idx, lng, lat) AS (VALUES ${valuesClause})
+      SELECT c.idx::int AS idx, n.id AS neighborhood_id
+      FROM coords c
+      LEFT JOIN neighborhoods n
+        ON ST_Within(ST_SetSRID(ST_Point(c.lng, c.lat), 4326), n.boundary)
+    `)
+
+    const neighborhoodIds = new Map<number, string | null>()
+    for (const row of nbhdResult.rows) {
+      neighborhoodIds.set(row.idx as number, (row.neighborhood_id as string) ?? null)
+    }
+
+    // Single bulk upsert
+    await db.insert(businesses).values(
+      valid.map((item, i) => ({
         name: item.name,
         type: item.type,
         category: item.category,
@@ -73,11 +71,31 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         postcode: item.postcode,
         phone: item.phone,
         website: item.website,
-        neighborhoodId,
+        externalId: item.externalId,
+        location: sql`ST_SetSRID(ST_Point(${item.lng}, ${item.lat}), 4326)`,
+        neighborhoodId: neighborhoodIds.get(i) ?? null,
+      }))
+    ).onConflictDoUpdate({
+      target: businesses.externalId,
+      set: {
+        name: sql`EXCLUDED.name`,
+        type: sql`EXCLUDED.type`,
+        category: sql`EXCLUDED.category`,
+        number: sql`EXCLUDED.number`,
+        street: sql`EXCLUDED.street`,
+        city: sql`EXCLUDED.city`,
+        region: sql`EXCLUDED.region`,
+        postcode: sql`EXCLUDED.postcode`,
+        phone: sql`EXCLUDED.phone`,
+        website: sql`EXCLUDED.website`,
+        neighborhoodId: sql`EXCLUDED.neighborhood_id`,
       },
     })
-    imported++
-  }
 
-  return NextResponse.json({ imported, skipped, total: items.length })
-})
+    return NextResponse.json({ imported: valid.length, skipped, total: items.length })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    console.error('[businesses/import]', message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
