@@ -23,6 +23,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link href="/admin/teams">Teams</Link>
           )}
           {role === 'admin' && (
+            <Link href="/admin/businesses">Businesses</Link>
+          )}
+          {role === 'admin' && (
             <Link href="/admin/import">Import</Link>
           )}
           {role === 'admin' && (

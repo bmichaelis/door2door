@@ -4,18 +4,23 @@ import Map, { NavigationControl } from 'react-map-gl/mapbox'
 import { MAPBOX_TOKEN } from '@/lib/mapbox'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'
+import { BusinessPins, type BusinessRow } from './BusinessPins'
 import { useState, useEffect } from 'react'
 import type { HouseRow, Neighborhood } from '@/lib/db/schema'
 import MapStyleToggle, { MapStyle, MAP_STYLE_URLS } from './MapStyleToggle'
 
+export type LayerVisibility = { homes: boolean; businesses: boolean }
+
 type Props = {
   neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon })[]
   houses: HouseRow[]
+  businesses: BusinessRow[]
+  layers: LayerVisibility
   onHouseClick: (house: HouseRow) => void
   onMapClick?: (lat: number, lng: number) => void
 }
 
-export default function MapView({ neighborhoods, houses, onHouseClick, onMapClick }: Props) {
+export default function MapView({ neighborhoods, houses, businesses, layers, onHouseClick, onMapClick }: Props) {
   const [viewport, setViewport] = useState({
     longitude: -98.5795,
     latitude: 39.8283,
@@ -49,7 +54,8 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
     >
       <NavigationControl position="top-right" />
       <NeighborhoodLayer neighborhoods={neighborhoods} />
-      <HousePins houses={houses} onHouseClick={onHouseClick} />
+      {layers.homes && <HousePins houses={houses} onHouseClick={onHouseClick} />}
+      {layers.businesses && <BusinessPins businesses={businesses} />}
       <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
     </Map>
   )

@@ -122,6 +122,24 @@ export const visits = pgTable('visits', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const businesses = pgTable('businesses', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  type: text('type'),       // OSM primary tag key: shop, amenity, office, etc.
+  category: text('category'), // OSM tag value: supermarket, restaurant, etc.
+  number: text('number'),
+  street: text('street'),
+  city: text('city'),
+  region: text('region'),
+  postcode: text('postcode'),
+  phone: text('phone'),
+  website: text('website'),
+  externalId: text('external_id').unique(), // e.g. "osm:node/12345"
+  location: geometryPoint('location').notNull(),
+  neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // Type exports
 export type User = typeof users.$inferSelect
 export type Team = typeof teams.$inferSelect
@@ -130,6 +148,7 @@ export type Neighborhood = typeof neighborhoods.$inferSelect
 export type House = typeof houses.$inferSelect
 export type Household = typeof households.$inferSelect
 export type Visit = typeof visits.$inferSelect
+export type Business = typeof businesses.$inferSelect
 
 // HouseRow is the UI-facing type: location extracted to lat/lng by GET routes
 export type HouseRow = Omit<House, 'location'> & { lat: number; lng: number }

@@ -6,6 +6,8 @@ import { HousePanel } from './HousePanel'
 import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
 import type { Neighborhood } from '@/lib/db/schema'
 import { type HouseWithOutcome, parseHouseNumber } from '@/lib/houses'
+import type { BusinessRow } from './BusinessPins'
+import type { LayerVisibility } from './MapView'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
@@ -18,7 +20,9 @@ type Props = {
 export function MapShell({ userRole }: Props) {
   const [neighborhoods, setNeighborhoods] = useState<(Neighborhood & { boundary: GeoJSON.Polygon })[]>([])
   const [houses, setHouses] = useState<HouseWithOutcome[]>([])
+  const [businesses, setBusinesses] = useState<BusinessRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [layers, setLayers] = useState<LayerVisibility>({ homes: true, businesses: true })
 
   useEffect(() => {
     fetch('/api/neighborhoods')
@@ -26,12 +30,16 @@ export function MapShell({ userRole }: Props) {
       .then(async (nbhds: (Neighborhood & { boundary: GeoJSON.Polygon })[]) => {
         setNeighborhoods(nbhds)
         if (!nbhds.length) { setDataLoading(false); return }
-        const houseArrays = await Promise.all(
-          nbhds.map((n: Neighborhood) =>
+        const [houseArrays, bizArrays] = await Promise.all([
+          Promise.all(nbhds.map((n: Neighborhood) =>
             fetch(`/api/houses?neighborhoodId=${n.id}`).then(r => r.json())
-          )
-        )
+          )),
+          Promise.all(nbhds.map((n: Neighborhood) =>
+            fetch(`/api/businesses?neighborhoodId=${n.id}`).then(r => r.json())
+          )),
+        ])
         setHouses(houseArrays.flat())
+        setBusinesses(bizArrays.flat())
         setDataLoading(false)
       })
       .catch(() => setDataLoading(false))
@@ -99,12 +107,25 @@ export function MapShell({ userRole }: Props) {
       <MapView
         neighborhoods={neighborhoods}
         houses={effectiveHouses}
+        businesses={businesses}
+        layers={layers}
         onHouseClick={house => setSelectedHouse(house)}
         onMapClick={(lat, lng) => {
           setSelectedHouse(null)
           setPendingLocation({ lat, lng })
         }}
       />
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
+        {(['homes', 'businesses'] as const).map(key => (
+          <button
+            key={key}
+            onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}
+            className={`px-4 py-2 transition-colors capitalize ${layers[key] ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            {key === 'homes' ? 'Homes' : 'Businesses'}
+          </button>
+        ))}
+      </div>
       <HousePanel
         house={selectedHouse}
         userRole={userRole}
