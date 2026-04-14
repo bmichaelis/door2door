@@ -25,6 +25,7 @@ export function MapShell({ userRole }: Props) {
   const [dataLoading, setDataLoading] = useState(true)
   const [layers, setLayers] = useState<LayerVisibility>({ homes: true, businesses: true })
   const [lastCenter, setLastCenter] = useState<{ lat: number; lng: number } | undefined>()
+  const [locationReady, setLocationReady] = useState(false)
   const saveLocationTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function MapShell({ userRole }: Props) {
         }
       })
       .catch(() => {})
+      .finally(() => setLocationReady(true))
   }, [])
 
   const handleViewportChange = useCallback((lat: number, lng: number) => {
@@ -130,7 +132,7 @@ export function MapShell({ userRole }: Props) {
           <p className="text-sm text-muted-foreground">Loading map data…</p>
         </div>
       )}
-      <MapView
+      {locationReady && <MapView
         neighborhoods={neighborhoods}
         houses={effectiveHouses}
         businesses={businesses}
@@ -144,7 +146,7 @@ export function MapShell({ userRole }: Props) {
           setPendingLocation({ lat, lng })
         }}
         onViewportChange={handleViewportChange}
-      />
+      />}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
         {(['homes', 'businesses'] as const).map(key => (
           <button
