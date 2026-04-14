@@ -140,6 +140,19 @@ export const businesses = pgTable('businesses', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const businessVisits = pgTable('business_visits', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  contactStatus: text('contact_status', { enum: ['answered', 'not_home', 'refused'] }).notNull(),
+  interestLevel: text('interest_level', { enum: ['interested', 'not_interested', 'maybe'] }),
+  notes: text('notes'),
+  followUpAt: timestamp('follow_up_at'),
+  saleOutcome: text('sale_outcome', { enum: ['sold', 'not_sold', 'follow_up'] }),
+  productId: uuid('product_id').references(() => products.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // Type exports
 export type User = typeof users.$inferSelect
 export type Team = typeof teams.$inferSelect
@@ -149,6 +162,7 @@ export type House = typeof houses.$inferSelect
 export type Household = typeof households.$inferSelect
 export type Visit = typeof visits.$inferSelect
 export type Business = typeof businesses.$inferSelect
+export type BusinessVisit = typeof businessVisits.$inferSelect
 
 // HouseRow is the UI-facing type: location extracted to lat/lng by GET routes
 export type HouseRow = Omit<House, 'location'> & { lat: number; lng: number }

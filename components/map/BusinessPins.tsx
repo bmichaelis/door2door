@@ -12,6 +12,10 @@ export type BusinessRow = {
   number: string | null
   street: string | null
   city: string | null
+  region: string | null
+  postcode: string | null
+  phone: string | null
+  website: string | null
 }
 
 type Props = {

@@ -17,10 +17,11 @@ type Props = {
   businesses: BusinessRow[]
   layers: LayerVisibility
   onHouseClick: (house: HouseRow) => void
+  onBusinessClick?: (business: BusinessRow) => void
   onMapClick?: (lat: number, lng: number) => void
 }
 
-export default function MapView({ neighborhoods, houses, businesses, layers, onHouseClick, onMapClick }: Props) {
+export default function MapView({ neighborhoods, houses, businesses, layers, onHouseClick, onBusinessClick, onMapClick }: Props) {
   const [viewport, setViewport] = useState({
     longitude: -98.5795,
     latitude: 39.8283,
@@ -42,12 +43,16 @@ export default function MapView({ neighborhoods, houses, businesses, layers, onH
       mapboxAccessToken={MAPBOX_TOKEN}
       mapStyle={MAP_STYLE_URLS[mapStyle]}
       style={{ width: '100%', height: '100%' }}
-      interactiveLayerIds={['house-circles']}
+      interactiveLayerIds={['house-circles', 'business-circles']}
       onClick={e => {
         const feature = e.features?.[0]
         if (feature?.layer?.id === 'house-circles') {
           const house = houses.find(h => h.id === feature.properties?.id)
           if (house) { onHouseClick(house); return }
+        }
+        if (feature?.layer?.id === 'business-circles') {
+          const business = businesses.find(b => b.id === feature.properties?.id)
+          if (business) { onBusinessClick?.(business); return }
         }
         if (viewport.zoom >= 15) onMapClick?.(e.lngLat.lat, e.lngLat.lng)
       }}

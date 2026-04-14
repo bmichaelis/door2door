@@ -8,6 +8,7 @@ import type { Neighborhood } from '@/lib/db/schema'
 import { type HouseWithOutcome, parseHouseNumber } from '@/lib/houses'
 import type { BusinessRow } from './BusinessPins'
 import type { LayerVisibility } from './MapView'
+import { BusinessPanel } from './BusinessPanel'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
@@ -45,6 +46,7 @@ export function MapShell({ userRole }: Props) {
       .catch(() => setDataLoading(false))
   }, [])
 
+  const [selectedBusiness, setSelectedBusiness] = useState<BusinessRow | null>(null)
   const [overrides, setOverrides] = useState<Map<string, Partial<HouseWithOutcome>>>(new Map())
   const [selectedHouse, setSelectedHouse] = useState<HouseWithOutcome | null>(null)
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -109,9 +111,11 @@ export function MapShell({ userRole }: Props) {
         houses={effectiveHouses}
         businesses={businesses}
         layers={layers}
-        onHouseClick={house => setSelectedHouse(house)}
+        onHouseClick={house => { setSelectedBusiness(null); setSelectedHouse(house) }}
+        onBusinessClick={business => { setSelectedHouse(null); setSelectedBusiness(business) }}
         onMapClick={(lat, lng) => {
           setSelectedHouse(null)
+          setSelectedBusiness(null)
           setPendingLocation({ lat, lng })
         }}
       />
@@ -126,6 +130,10 @@ export function MapShell({ userRole }: Props) {
           </button>
         ))}
       </div>
+      <BusinessPanel
+        business={selectedBusiness}
+        onClose={() => setSelectedBusiness(null)}
+      />
       <HousePanel
         house={selectedHouse}
         userRole={userRole}
