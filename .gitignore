@@ -47,3 +47,7 @@ next-env.d.ts
 
 # brainstorming visual companion
 .superpowers/
+
+# downloaded data files
+*.geojson
+*.geojson.state
