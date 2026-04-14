@@ -17,5 +17,4 @@ CREATE TABLE "businesses" (
 	CONSTRAINT "businesses_external_id_unique" UNIQUE("external_id")
 );
 --> statement-breakpoint
-ALTER TABLE "neighborhoods" ADD COLUMN "city" text;--> statement-breakpoint
 ALTER TABLE "businesses" ADD CONSTRAINT "businesses_neighborhood_id_neighborhoods_id_fk" FOREIGN KEY ("neighborhood_id") REFERENCES "public"."neighborhoods"("id") ON DELETE no action ON UPDATE no action;

@@ -11,7 +11,9 @@
     "test:run": "vitest run",
     "cf:build": "next build && npx @cloudflare/next-on-pages",
     "cf:preview": "npm run cf:build && wrangler pages dev .vercel/output/static",
-    "cf:deploy": "npm run cf:build && wrangler pages deploy .vercel/output/static"
+    "cf:deploy": "npm run cf:build && wrangler pages deploy .vercel/output/static",
+    "db:migrate": "node --env-file=.env.local node_modules/.bin/drizzle-kit migrate",
+    "db:generate": "node --env-file=.env.local node_modules/.bin/drizzle-kit generate"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
@@ -42,6 +44,7 @@
     "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
@@ -49,6 +52,7 @@
     "eslint": "^9",
     "eslint-config-next": "^15.0.0",
     "jsdom": "^29.0.1",
+    "pg": "^8.20.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.2",
