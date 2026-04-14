@@ -28,6 +28,7 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [visitHouseholdId, setVisitHouseholdId] = useState<string | null>(null)
 
   const activeHousehold = households.find(h => h.active)
 
@@ -65,8 +66,38 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
   useEffect(() => {
     if (!house) return
     setView('detail')
+    setVisitHouseholdId(null)
     fetchData()
   }, [house?.id, fetchData])
+
+  async function handleLogVisitClick() {
+    if (!house) return
+    if ((house.doNotKnock || house.noSolicitingSign) && !window.confirm('This house is flagged. Are you sure you want to log a visit?')) return
+    if (activeHousehold) {
+      setVisitHouseholdId(activeHousehold.id)
+      setView('log-visit')
+      return
+    }
+    // No household on record — create an anonymous one silently
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/households', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ houseId: house.id }),
+      })
+      if (!res.ok) throw new Error('Failed to start visit')
+      const newHousehold: Household = await res.json()
+      setHouseholds(prev => [...prev, newHousehold])
+      setVisitHouseholdId(newHousehold.id)
+      setView('log-visit')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to start visit')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function handleLogVisit(data: VisitFormData) {
     const res = await fetch('/api/visits', {
@@ -80,6 +111,7 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
     }
     if (house) onHouseUpdate?.(house.id, { lastOutcome: data.saleOutcome ?? null })
     setView('detail')
+    setVisitHouseholdId(null)
     fetchData()
   }
 
@@ -153,12 +185,7 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
             )}
 
             <div className="flex gap-2 flex-wrap">
-              <Button size="sm" onClick={() => {
-                if (isFlagged) {
-                  if (!window.confirm('This house is flagged. Are you sure you want to log a visit?')) return
-                }
-                setView('log-visit')
-              }}>
+              <Button size="sm" onClick={handleLogVisitClick} disabled={loading}>
                 Log Visit
               </Button>
               <Button size="sm" variant="outline" onClick={() => setView('new-household')}>
@@ -208,20 +235,13 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate }: Props) {
           </div>
         )}
 
-        {view === 'log-visit' && !activeHousehold && (
-          <div className="mt-4 space-y-3">
-            <p className="text-sm text-muted-foreground">No household on record. Add one before logging a visit.</p>
-            <Button size="sm" onClick={() => setView('new-household')}>Add Household</Button>
-            <Button size="sm" variant="ghost" onClick={() => setView('detail')}>Cancel</Button>
-          </div>
-        )}
-        {view === 'log-visit' && activeHousehold && (
+        {view === 'log-visit' && visitHouseholdId && (
           <div className="mt-4">
             <VisitForm
-              householdId={activeHousehold.id}
+              householdId={visitHouseholdId}
               products={products}
               onSubmit={handleLogVisit}
-              onCancel={() => setView('detail')}
+              onCancel={() => { setView('detail'); setVisitHouseholdId(null) }}
             />
           </div>
         )}
