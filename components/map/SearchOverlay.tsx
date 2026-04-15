@@ -24,19 +24,23 @@ export function SearchOverlay({ open, businesses, onClose, onSelect }: Props) {
   const [searching, setSearching] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const abortRef = useRef<AbortController | null>(null)
 
   // Server-side house search (address or surname)
   useEffect(() => {
     clearTimeout(searchTimeout.current)
-    if (!query.trim()) { setHouseResults([]); return }
+    abortRef.current?.abort()
+    if (query.trim().length < 2) { setHouseResults([]); setSearching(false); return }
+    setSearching(true)
     searchTimeout.current = setTimeout(() => {
-      setSearching(true)
-      fetch(`/api/houses/search?q=${encodeURIComponent(query.trim())}`)
+      const controller = new AbortController()
+      abortRef.current = controller
+      fetch(`/api/houses/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal })
         .then(r => r.json())
         .then((rows: HouseSearchResult[]) => setHouseResults(rows))
-        .catch(() => setHouseResults([]))
+        .catch(e => { if (e.name !== 'AbortError') setHouseResults([]) })
         .finally(() => setSearching(false))
-    }, 300)
+    }, 400)
   }, [query])
 
   // Client-side business search (businesses are fully loaded on mount)
