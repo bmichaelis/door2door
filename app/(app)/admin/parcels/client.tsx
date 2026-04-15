@@ -11,6 +11,8 @@ type ParcelItem = {
   geom: object
 }
 
+type Bbox = [number, number, number, number] // [minLng, minLat, maxLng, maxLat]
+
 // Field names used by SGID / ArcGIS exports (try in order)
 const OWNER_FIELDS = [
   'OWN_NAME1', 'own_name1',
@@ -25,6 +27,30 @@ function detectOwnerField(props: Record<string, unknown>): string | null {
     if (typeof props[field] === 'string' && (props[field] as string).trim()) return field
   }
   return null
+}
+
+// Recursively walk coordinates array (handles Polygon, MultiPolygon)
+function geomBbox(geom: any): Bbox | null {
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity
+
+  function walk(c: any) {
+    if (!Array.isArray(c)) return
+    if (typeof c[0] === 'number') {
+      if (c[0] < minLng) minLng = c[0]
+      if (c[1] < minLat) minLat = c[1]
+      if (c[0] > maxLng) maxLng = c[0]
+      if (c[1] > maxLat) maxLat = c[1]
+    } else {
+      for (const item of c) walk(item)
+    }
+  }
+
+  walk(geom?.coordinates)
+  return isFinite(minLng) ? [minLng, minLat, maxLng, maxLat] : null
+}
+
+function bboxOverlaps(a: Bbox, b: Bbox): boolean {
+  return !(a[2] < b[0] || b[2] < a[0] || a[3] < b[1] || b[3] < a[1])
 }
 
 // "SMITH JOHN D" → "Smith John D"
@@ -91,12 +117,44 @@ export function ParcelImportClient() {
 
     setDetectedField(ownerField)
 
+    // Fetch neighborhood bounding boxes to filter out parcels outside our area
+    setProgress('Loading neighborhoods…')
+    let neighborhoodBbox: Bbox | null = null
+    try {
+      const res = await fetch('/api/neighborhoods')
+      if (res.ok) {
+        const nbhds: any[] = await res.json()
+        let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity
+        for (const n of nbhds) {
+          const b = geomBbox(n.boundary)
+          if (b) {
+            if (b[0] < minLng) minLng = b[0]
+            if (b[1] < minLat) minLat = b[1]
+            if (b[2] > maxLng) maxLng = b[2]
+            if (b[3] > maxLat) maxLat = b[3]
+          }
+        }
+        if (isFinite(minLng)) {
+          // Add 0.01° buffer (~1km) around neighborhood boundaries
+          neighborhoodBbox = [minLng - 0.01, minLat - 0.01, maxLng + 0.01, maxLat + 0.01]
+        }
+      }
+    } catch { /* skip bbox filtering if fetch fails */ }
+
+    setProgress('Filtering parcels…')
+
     const items: ParcelItem[] = features
       .filter(f => {
         const gtype = f.geometry?.type
-        return (gtype === 'Polygon' || gtype === 'MultiPolygon') &&
-          typeof f.properties?.[ownerField!] === 'string' &&
-          f.properties[ownerField!].trim()
+        if (gtype !== 'Polygon' && gtype !== 'MultiPolygon') return false
+        if (typeof f.properties?.[ownerField!] !== 'string') return false
+        if (!f.properties[ownerField!].trim()) return false
+        // Skip parcels outside the neighborhood area
+        if (neighborhoodBbox) {
+          const parcelBbox = geomBbox(f.geometry)
+          if (parcelBbox && !bboxOverlaps(parcelBbox, neighborhoodBbox)) return false
+        }
+        return true
       })
       .map(f => ({
         ownerName: titleCase(f.properties[ownerField!]),
@@ -105,13 +163,22 @@ export function ParcelImportClient() {
 
     if (items.length === 0) {
       setStatus('error')
-      setMessage(`No parcel polygons with owner names found using field "${ownerField}".`)
+      setMessage(
+        neighborhoodBbox
+          ? `No parcels found within your neighborhood area. Check that the file covers your neighborhoods.`
+          : `No parcel polygons with owner names found using field "${ownerField}".`
+      )
       if (fileRef.current) fileRef.current.value = ''
       return
     }
 
+    const filtered = features.length - items.length
     setStatus('importing')
-    setProgress(`Found ${items.length.toLocaleString()} parcels. Importing…`)
+    setProgress(
+      `Found ${items.length.toLocaleString()} parcels in your area` +
+      (filtered > 0 ? ` (filtered out ${filtered.toLocaleString()} outside neighborhoods)` : '') +
+      `. Importing…`
+    )
 
     let totalUpdated = 0
     let totalCreated = 0
@@ -167,7 +234,7 @@ export function ParcelImportClient() {
             disabled={status === 'parsing' || status === 'importing'}
           />
           <p className="text-xs text-muted-foreground">
-            Large files (100 MB+) will take a moment to parse in the browser.
+            Full county files are fine — parcels outside your neighborhoods are filtered out automatically.
           </p>
         </div>
 
