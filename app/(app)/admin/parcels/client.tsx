@@ -41,9 +41,24 @@ function titleCase(s: string): string {
   return s.trim().replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
 }
 
-// "1695 N 350 WEST ST, PROVO UT 84601" → "1695 N 350 WEST ST"
+// Normalize a PARCEL_ADD value to match the OpenAddresses format stored in houses.
+// SGID uses abbreviated trailing directions: "471 E 200 N", "927 N 940 W"
+// OpenAddresses stores:                      "471 E 200 NORTH ST", "927 N 940 WEST ST"
 function normalizeAddress(raw: string): string {
-  return raw.split(',')[0].trim().toUpperCase()
+  let addr = raw.split(',')[0].trim().toUpperCase()
+  // Expand abbreviated trailing direction → full word + ST suffix
+  addr = addr
+    .replace(/ N$/, ' NORTH ST')
+    .replace(/ S$/, ' SOUTH ST')
+    .replace(/ E$/, ' EAST ST')
+    .replace(/ W$/, ' WEST ST')
+  // Full direction word with no suffix → add ST suffix
+  addr = addr
+    .replace(/ NORTH$/, ' NORTH ST')
+    .replace(/ SOUTH$/, ' SOUTH ST')
+    .replace(/ EAST$/, ' EAST ST')
+    .replace(/ WEST$/, ' WEST ST')
+  return addr
 }
 
 const BATCH_SIZE = 200
