@@ -6,8 +6,9 @@ import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'
 import { BusinessPins, type BusinessRow } from './BusinessPins'
 import { useState, useEffect } from 'react'
+// mapStyle is now owned by MapShell so both toggles render outside the map
 import type { HouseRow, Neighborhood } from '@/lib/db/schema'
-import MapStyleToggle, { MapStyle, MAP_STYLE_URLS } from './MapStyleToggle'
+import { MAP_STYLE_URLS, type MapStyle } from './MapStyleToggle'
 
 export type LayerVisibility = { homes: boolean; businesses: boolean }
 
@@ -16,6 +17,7 @@ type Props = {
   houses: HouseRow[]
   businesses: BusinessRow[]
   layers: LayerVisibility
+  mapStyle: MapStyle
   initialCenter?: { lat: number; lng: number }
   onHouseClick: (house: HouseRow) => void
   onBusinessClick?: (business: BusinessRow) => void
@@ -23,13 +25,12 @@ type Props = {
   onViewportChange?: (lat: number, lng: number) => void
 }
 
-export default function MapView({ neighborhoods, houses, businesses, layers, initialCenter, onHouseClick, onBusinessClick, onMapClick, onViewportChange }: Props) {
+export default function MapView({ neighborhoods, houses, businesses, layers, mapStyle, initialCenter, onHouseClick, onBusinessClick, onMapClick, onViewportChange }: Props) {
   const [viewport, setViewport] = useState({
     longitude: initialCenter?.lng ?? -98.5795,
     latitude: initialCenter?.lat ?? 39.8283,
     zoom: initialCenter ? 13 : 10,
   })
-  const [mapStyle, setMapStyle] = useState<MapStyle>('streets')
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -66,7 +67,6 @@ export default function MapView({ neighborhoods, houses, businesses, layers, ini
       <NeighborhoodLayer neighborhoods={neighborhoods} />
       {layers.homes && <HousePins houses={houses} onHouseClick={onHouseClick} />}
       {layers.businesses && <BusinessPins businesses={businesses} />}
-      <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
     </Map>
   )
 }

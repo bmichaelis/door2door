@@ -8,6 +8,7 @@ import type { Neighborhood } from '@/lib/db/schema'
 import { type HouseWithOutcome, parseHouseNumber } from '@/lib/houses'
 import type { BusinessRow } from './BusinessPins'
 import type { LayerVisibility } from './MapView'
+import MapStyleToggle, { type MapStyle } from './MapStyleToggle'
 import { BusinessPanel } from './BusinessPanel'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
@@ -24,6 +25,7 @@ export function MapShell({ userRole }: Props) {
   const [businesses, setBusinesses] = useState<BusinessRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
   const [layers, setLayers] = useState<LayerVisibility>({ homes: true, businesses: true })
+  const [mapStyle, setMapStyle] = useState<MapStyle>('streets')
   const [lastCenter, setLastCenter] = useState<{ lat: number; lng: number } | undefined>()
   const [locationReady, setLocationReady] = useState(false)
   const saveLocationTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -137,6 +139,7 @@ export function MapShell({ userRole }: Props) {
         houses={effectiveHouses}
         businesses={businesses}
         layers={layers}
+        mapStyle={mapStyle}
         initialCenter={lastCenter}
         onHouseClick={house => { setSelectedBusiness(null); setSelectedHouse(house) }}
         onBusinessClick={business => { setSelectedHouse(null); setSelectedBusiness(business) }}
@@ -147,16 +150,21 @@ export function MapShell({ userRole }: Props) {
         }}
         onViewportChange={handleViewportChange}
       />}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
-        {(['homes', 'businesses'] as const).map(key => (
-          <button
-            key={key}
-            onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}
-            className={`px-4 py-2 transition-colors capitalize ${layers[key] ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            {key === 'homes' ? 'Homes' : 'Businesses'}
-          </button>
-        ))}
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between gap-3 px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+        {/* Map style toggle — bottom left */}
+        <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
+        {/* Layer toggle — bottom right */}
+        <div className="flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
+          {(['homes', 'businesses'] as const).map(key => (
+            <button
+              key={key}
+              onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}
+              className={`px-4 py-2 transition-colors capitalize ${layers[key] ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {key === 'homes' ? 'Homes' : 'Businesses'}
+            </button>
+          ))}
+        </div>
       </div>
       <BusinessPanel
         business={selectedBusiness}
