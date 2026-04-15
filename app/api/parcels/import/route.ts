@@ -7,8 +7,24 @@ import { sql } from 'drizzle-orm'
 
 type ParcelItem = {
   ownerName: string
-  address: string  // normalized "NUMBER STREET", uppercase
+  address: string  // pre-normalized on client: split on comma, uppercased
 }
+
+// Normalize an address to a canonical form for matching:
+//   1. Uppercase + trim
+//   2. Strip common street type suffixes (ST, AVE, DR, etc.)
+//   3. Abbreviate trailing cardinal direction words: NORTH→N, SOUTH→S, EAST→E, WEST→W
+//
+// "3047 W 1930 NORTH ST" → "3047 W 1930 N"
+// "3047 W 1930 N"        → "3047 W 1930 N"   (parcel already abbreviated)
+// "239 E RIDGE RD"       → "239 E RIDGE"
+// "1695 N 350 WEST ST"   → "1695 N 350 W"
+const NORMALIZE = (expr: ReturnType<typeof sql>) => sql`
+  regexp_replace(
+    regexp_replace(regexp_replace(regexp_replace(regexp_replace(
+      regexp_replace(upper(trim(${expr})), '\s+(ST|AVE|BLVD|DR|LN|RD|CT|CIR|WAY|PL|LOOP|PKWY)$', ''),
+    '\sNORTH$', ' N'), '\sSOUTH$', ' S'), '\sEAST$', ' E'), '\sWEST$', ' W')
+  , '\sN$', ' N')`
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,16 +41,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ updated: 0, created: 0 })
     }
 
-    // Match parcels to houses by address string, then upsert household surnames.
-    //
-    // Normalization: upper(trim(number || ' ' || street)) on the house side
-    // should equal the pre-normalized address sent from the client
-    // (first segment before any comma, uppercased).
     const result = await db.execute(sql`
       WITH input AS (
         SELECT
-          (item->>'ownerName')::text                    AS owner_name,
-          upper(trim((item->>'address')::text))         AS address
+          (item->>'ownerName')::text                                    AS owner_name,
+          ${NORMALIZE(sql`(item->>'address')::text`)}                  AS address
         FROM json_array_elements(${JSON.stringify(valid)}::json) AS item
       ),
       matched AS (
@@ -43,7 +54,7 @@ export async function POST(req: NextRequest) {
           i.owner_name
         FROM input i
         JOIN houses h
-          ON upper(trim(h.number || ' ' || h.street)) = i.address
+          ON ${NORMALIZE(sql`h.number || ' ' || h.street`)} = i.address
         ORDER BY h.id, i.owner_name
       ),
       updated AS (
