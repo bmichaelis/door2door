@@ -130,7 +130,13 @@ export function ParcelImportClient() {
     const items: ParcelItem[] = []
     for (const f of features) {
       const props = f.properties ?? {}
-      const owner = typeof props[ownerField] === 'string' ? props[ownerField].trim() : ''
+      // Try all owner fields per feature — residential parcels often use OWN_NAME1
+      // while commercial parcels use OWNERNAME; the detected field may not cover all records.
+      let owner = ''
+      for (const field of OWNER_FIELDS) {
+        const val = props[field]
+        if (typeof val === 'string' && val.trim()) { owner = val.trim(); break }
+      }
       const addr = typeof props[addressField] === 'string' ? props[addressField].trim() : ''
       if (owner && addr) {
         items.push({ ownerName: titleCase(owner), address: normalizeAddress(addr) })
