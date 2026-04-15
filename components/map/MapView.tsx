@@ -1,12 +1,11 @@
 'use client'
-import Map, { NavigationControl } from 'react-map-gl/mapbox'
+import Map, { NavigationControl, type MapRef } from 'react-map-gl/mapbox'
 
 import { MAPBOX_TOKEN } from '@/lib/mapbox'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'
 import { BusinessPins, type BusinessRow } from './BusinessPins'
-import { useState, useEffect } from 'react'
-// mapStyle is now owned by MapShell so both toggles render outside the map
+import { useState, useEffect, useRef } from 'react'
 import type { HouseRow, Neighborhood } from '@/lib/db/schema'
 import { MAP_STYLE_URLS, type MapStyle } from './MapStyleToggle'
 
@@ -19,13 +18,19 @@ type Props = {
   layers: LayerVisibility
   mapStyle: MapStyle
   initialCenter?: { lat: number; lng: number }
+  targetLocation?: { lat: number; lng: number } | null
   onHouseClick: (house: HouseRow) => void
   onBusinessClick?: (business: BusinessRow) => void
   onMapClick?: (lat: number, lng: number) => void
   onViewportChange?: (lat: number, lng: number) => void
 }
 
-export default function MapView({ neighborhoods, houses, businesses, layers, mapStyle, initialCenter, onHouseClick, onBusinessClick, onMapClick, onViewportChange }: Props) {
+export default function MapView({
+  neighborhoods, houses, businesses, layers, mapStyle,
+  initialCenter, targetLocation,
+  onHouseClick, onBusinessClick, onMapClick, onViewportChange,
+}: Props) {
+  const mapRef = useRef<MapRef>(null)
   const [viewport, setViewport] = useState({
     longitude: initialCenter?.lng ?? -98.5795,
     latitude: initialCenter?.lat ?? 39.8283,
@@ -39,8 +44,18 @@ export default function MapView({ neighborhoods, houses, businesses, layers, map
     )
   }, [])
 
+  useEffect(() => {
+    if (!targetLocation) return
+    mapRef.current?.flyTo({
+      center: [targetLocation.lng, targetLocation.lat],
+      zoom: 17,
+      duration: 800,
+    })
+  }, [targetLocation])
+
   return (
     <Map
+      ref={mapRef}
       {...viewport}
       onMove={e => {
         setViewport(e.viewState)

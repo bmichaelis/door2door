@@ -10,6 +10,8 @@ import type { BusinessRow } from './BusinessPins'
 import type { LayerVisibility } from './MapView'
 import MapStyleToggle, { type MapStyle } from './MapStyleToggle'
 import { BusinessPanel } from './BusinessPanel'
+import { SearchOverlay } from './SearchOverlay'
+import { SearchIcon } from 'lucide-react'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
@@ -74,6 +76,8 @@ export function MapShell({ userRole }: Props) {
       .catch(() => setDataLoading(false))
   }, [])
 
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [targetLocation, setTargetLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessRow | null>(null)
   const [overrides, setOverrides] = useState<Map<string, Partial<HouseWithOutcome>>>(new Map())
   const [selectedHouse, setSelectedHouse] = useState<HouseWithOutcome | null>(null)
@@ -141,6 +145,7 @@ export function MapShell({ userRole }: Props) {
         layers={layers}
         mapStyle={mapStyle}
         initialCenter={lastCenter}
+        targetLocation={targetLocation}
         onHouseClick={house => { setSelectedBusiness(null); setSelectedHouse(house) }}
         onBusinessClick={business => { setSelectedHouse(null); setSelectedBusiness(business) }}
         onMapClick={(lat, lng) => {
@@ -153,19 +158,46 @@ export function MapShell({ userRole }: Props) {
       <div className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between gap-3 px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         {/* Map style toggle — bottom left */}
         <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
-        {/* Layer toggle — bottom right */}
-        <div className="flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
-          {(['homes', 'businesses'] as const).map(key => (
-            <button
-              key={key}
-              onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}
-              className={`px-4 py-2 transition-colors capitalize ${layers[key] ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {key === 'homes' ? 'Homes' : 'Businesses'}
-            </button>
-          ))}
+        {/* Layer toggle + search — bottom right */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center justify-center h-9 w-9 rounded-full border bg-background/95 shadow-lg backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Search"
+          >
+            <SearchIcon className="h-4 w-4" />
+          </button>
+          <div className="flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
+            {(['homes', 'businesses'] as const).map(key => (
+              <button
+                key={key}
+                onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}
+                className={`px-4 py-2 transition-colors capitalize ${layers[key] ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {key === 'homes' ? 'Homes' : 'Businesses'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      <SearchOverlay
+        open={searchOpen}
+        houses={effectiveHouses}
+        businesses={businesses}
+        onClose={() => setSearchOpen(false)}
+        onSelect={result => {
+          const { lat, lng } = result.kind === 'house' ? result.item : result.item
+          setTargetLocation({ lat, lng })
+          if (result.kind === 'house') {
+            setSelectedBusiness(null)
+            setSelectedHouse(result.item)
+          } else {
+            setSelectedHouse(null)
+            setSelectedBusiness(result.item)
+          }
+        }}
+      />
       <BusinessPanel
         business={selectedBusiness}
         onClose={() => setSelectedBusiness(null)}
