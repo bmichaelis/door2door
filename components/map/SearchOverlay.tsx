@@ -5,54 +5,53 @@ import { cn } from '@/lib/utils'
 import type { HouseWithOutcome } from '@/lib/houses'
 import type { BusinessRow } from './BusinessPins'
 
+type HouseSearchResult = HouseWithOutcome & { surname?: string | null }
+
 type SearchResult =
-  | { kind: 'house'; item: HouseWithOutcome }
+  | { kind: 'house'; item: HouseSearchResult }
   | { kind: 'business'; item: BusinessRow }
 
 type Props = {
   open: boolean
-  houses: HouseWithOutcome[]
   businesses: BusinessRow[]
   onClose: () => void
   onSelect: (result: SearchResult) => void
 }
 
-function houseAddress(h: HouseWithOutcome) {
-  return [h.number, h.street].filter(Boolean).join(' ')
-}
+export function SearchOverlay({ open, businesses, onClose, onSelect }: Props) {
+  const [query, setQuery] = useState('')
+  const [houseResults, setHouseResults] = useState<HouseSearchResult[]>([])
+  const [searching, setSearching] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const searchTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-function search(query: string, houses: HouseWithOutcome[], businesses: BusinessRow[]): SearchResult[] {
-  if (!query.trim()) return []
-  const q = query.toLowerCase()
+  // Server-side house search (address or surname)
+  useEffect(() => {
+    clearTimeout(searchTimeout.current)
+    if (!query.trim()) { setHouseResults([]); return }
+    searchTimeout.current = setTimeout(() => {
+      setSearching(true)
+      fetch(`/api/houses/search?q=${encodeURIComponent(query.trim())}`)
+        .then(r => r.json())
+        .then((rows: HouseSearchResult[]) => setHouseResults(rows))
+        .catch(() => setHouseResults([]))
+        .finally(() => setSearching(false))
+    }, 300)
+  }, [query])
 
-  const matchedHouses: SearchResult[] = houses
-    .filter(h => houseAddress(h).toLowerCase().includes(q) || h.street?.toLowerCase().includes(q))
-    .slice(0, 5)
-    .map(item => ({ kind: 'house', item }))
-
-  const matchedBusinesses: SearchResult[] = businesses
+  // Client-side business search (businesses are fully loaded on mount)
+  const bizResults: { kind: 'business'; item: BusinessRow }[] = businesses
     .filter(b =>
-      b.name.toLowerCase().includes(q) ||
-      (b.street ?? '').toLowerCase().includes(q) ||
-      [b.number, b.street].filter(Boolean).join(' ').toLowerCase().includes(q)
+      b.name.toLowerCase().includes(query.toLowerCase()) ||
+      [b.number, b.street].filter(Boolean).join(' ').toLowerCase().includes(query.toLowerCase())
     )
     .slice(0, 5)
-    .map(item => ({ kind: 'business', item }))
-
-  return [...matchedHouses, ...matchedBusinesses]
-}
-
-export function SearchOverlay({ open, houses, businesses, onClose, onSelect }: Props) {
-  const [query, setQuery] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-  const results = search(query, houses, businesses)
-
-  const houseResults = results.filter(r => r.kind === 'house') as { kind: 'house'; item: HouseWithOutcome }[]
-  const bizResults = results.filter(r => r.kind === 'business') as { kind: 'business'; item: BusinessRow }[]
+    .map(item => ({ kind: 'business' as const, item }))
 
   useEffect(() => {
     if (open) {
       setQuery('')
+      setHouseResults([])
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [open])
@@ -73,6 +72,8 @@ export function SearchOverlay({ open, houses, businesses, onClose, onSelect }: P
     onClose()
   }
 
+  const houseResultsForDisplay = houseResults.map(item => ({ kind: 'house' as const, item }))
+
   return (
     <div
       className="absolute inset-0 z-20 flex flex-col items-center pt-16 px-4 bg-black/40 backdrop-blur-sm"
@@ -86,7 +87,7 @@ export function SearchOverlay({ open, houses, businesses, onClose, onSelect }: P
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search address or business name…"
+            placeholder="Search address or household surname…"
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           {query && (
@@ -100,22 +101,26 @@ export function SearchOverlay({ open, houses, businesses, onClose, onSelect }: P
         <div className="max-h-[60vh] overflow-y-auto">
           {!query.trim() && (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-              Type an address or business name
+              Type an address or household surname
             </p>
           )}
 
-          {query.trim() && results.length === 0 && (
+          {query.trim() && searching && (
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">Searching…</p>
+          )}
+
+          {query.trim() && !searching && houseResultsForDisplay.length === 0 && bizResults.length === 0 && (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">
               No results for "{query}"
             </p>
           )}
 
-          {houseResults.length > 0 && (
+          {houseResultsForDisplay.length > 0 && (
             <div>
               <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Homes
               </p>
-              {houseResults.map(r => (
+              {houseResultsForDisplay.map(r => (
                 <button
                   key={r.item.id}
                   onClick={() => handleSelect(r)}
@@ -123,8 +128,11 @@ export function SearchOverlay({ open, houses, businesses, onClose, onSelect }: P
                 >
                   <HomeIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{houseAddress(r.item)}</p>
-                    <p className="text-xs text-muted-foreground truncate">{r.item.city}</p>
+                    <p className="text-sm font-medium truncate">{r.item.number} {r.item.street}</p>
+                    {r.item.surname
+                      ? <p className="text-xs text-muted-foreground truncate">{r.item.surname} · {r.item.city}</p>
+                      : <p className="text-xs text-muted-foreground truncate">{r.item.city}</p>
+                    }
                   </div>
                 </button>
               ))}
@@ -132,7 +140,7 @@ export function SearchOverlay({ open, houses, businesses, onClose, onSelect }: P
           )}
 
           {bizResults.length > 0 && (
-            <div className={cn(houseResults.length > 0 && 'border-t')}>
+            <div className={cn(houseResultsForDisplay.length > 0 && 'border-t')}>
               <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Businesses
               </p>

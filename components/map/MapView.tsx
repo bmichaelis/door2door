@@ -10,9 +10,10 @@ import type { HouseRow, Neighborhood } from '@/lib/db/schema'
 import { MAP_STYLE_URLS, type MapStyle } from './MapStyleToggle'
 
 export type LayerVisibility = { homes: boolean; businesses: boolean }
+export type ViewportBounds = { west: number; south: number; east: number; north: number }
 
 type Props = {
-  neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon })[]
+  neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon; houseCount: number })[]
   houses: HouseRow[]
   businesses: BusinessRow[]
   layers: LayerVisibility
@@ -22,7 +23,7 @@ type Props = {
   onHouseClick: (house: HouseRow) => void
   onBusinessClick?: (business: BusinessRow) => void
   onMapClick?: (lat: number, lng: number) => void
-  onViewportChange?: (lat: number, lng: number) => void
+  onViewportChange?: (lat: number, lng: number, zoom: number, bounds: ViewportBounds) => void
 }
 
 export default function MapView({
@@ -59,7 +60,13 @@ export default function MapView({
       {...viewport}
       onMove={e => {
         setViewport(e.viewState)
-        onViewportChange?.(e.viewState.latitude, e.viewState.longitude)
+        const b = e.target.getBounds()
+        onViewportChange?.(
+          e.viewState.latitude,
+          e.viewState.longitude,
+          e.viewState.zoom,
+          { west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() },
+        )
       }}
       mapboxAccessToken={MAPBOX_TOKEN}
       mapStyle={MAP_STYLE_URLS[mapStyle]}

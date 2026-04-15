@@ -7,7 +7,7 @@ import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
 import type { Neighborhood } from '@/lib/db/schema'
 import { type HouseWithOutcome, parseHouseNumber } from '@/lib/houses'
 import type { BusinessRow } from './BusinessPins'
-import type { LayerVisibility } from './MapView'
+import type { LayerVisibility, ViewportBounds } from './MapView'
 import MapStyleToggle, { type MapStyle } from './MapStyleToggle'
 import { BusinessPanel } from './BusinessPanel'
 import { SearchOverlay } from './SearchOverlay'
@@ -17,12 +17,16 @@ const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
 export type { HouseWithOutcome }
 
+const HOUSE_ZOOM_THRESHOLD = 14
+
+type NeighborhoodWithCount = Neighborhood & { boundary: GeoJSON.Polygon; houseCount: number }
+
 type Props = {
   userRole: string
 }
 
 export function MapShell({ userRole }: Props) {
-  const [neighborhoods, setNeighborhoods] = useState<(Neighborhood & { boundary: GeoJSON.Polygon })[]>([])
+  const [neighborhoods, setNeighborhoods] = useState<NeighborhoodWithCount[]>([])
   const [houses, setHouses] = useState<HouseWithOutcome[]>([])
   const [businesses, setBusinesses] = useState<BusinessRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
@@ -30,7 +34,11 @@ export function MapShell({ userRole }: Props) {
   const [mapStyle, setMapStyle] = useState<MapStyle>('streets')
   const [lastCenter, setLastCenter] = useState<{ lat: number; lng: number } | undefined>()
   const [locationReady, setLocationReady] = useState(false)
+
   const saveLocationTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const bboxFetchTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const currentBoundsRef = useRef<ViewportBounds | null>(null)
+  const currentZoomRef = useRef<number>(10)
 
   useEffect(() => {
     fetch('/api/users/me')
@@ -44,7 +52,37 @@ export function MapShell({ userRole }: Props) {
       .finally(() => setLocationReady(true))
   }, [])
 
-  const handleViewportChange = useCallback((lat: number, lng: number) => {
+  // On mount: load neighborhoods (with house counts) + businesses only — houses load lazily by viewport
+  useEffect(() => {
+    fetch('/api/neighborhoods')
+      .then(r => r.json())
+      .then(async (nbhds: NeighborhoodWithCount[]) => {
+        setNeighborhoods(nbhds)
+        if (!nbhds.length) { setDataLoading(false); return }
+        const bizArrays = await Promise.all(
+          nbhds.map((n: Neighborhood) =>
+            fetch(`/api/businesses?neighborhoodId=${n.id}`).then(r => r.json())
+          )
+        )
+        setBusinesses(bizArrays.flat())
+        setDataLoading(false)
+      })
+      .catch(() => setDataLoading(false))
+  }, [])
+
+  function fetchHousesForBounds(bounds: ViewportBounds) {
+    const { west, south, east, north } = bounds
+    fetch(`/api/houses?bbox=${west},${south},${east},${north}`)
+      .then(r => r.json())
+      .then((rows: HouseWithOutcome[]) => setHouses(rows))
+      .catch(() => {})
+  }
+
+  const handleViewportChange = useCallback((lat: number, lng: number, zoom: number, bounds: ViewportBounds) => {
+    currentZoomRef.current = zoom
+    currentBoundsRef.current = bounds
+
+    // Save last position (debounced 5s)
     clearTimeout(saveLocationTimeout.current)
     saveLocationTimeout.current = setTimeout(() => {
       fetch('/api/users/me', {
@@ -53,27 +91,16 @@ export function MapShell({ userRole }: Props) {
         body: JSON.stringify({ lastLat: lat, lastLng: lng }),
       }).catch(() => {})
     }, 5000)
-  }, [])
 
-  useEffect(() => {
-    fetch('/api/neighborhoods')
-      .then(r => r.json())
-      .then(async (nbhds: (Neighborhood & { boundary: GeoJSON.Polygon })[]) => {
-        setNeighborhoods(nbhds)
-        if (!nbhds.length) { setDataLoading(false); return }
-        const [houseArrays, bizArrays] = await Promise.all([
-          Promise.all(nbhds.map((n: Neighborhood) =>
-            fetch(`/api/houses?neighborhoodId=${n.id}`).then(r => r.json())
-          )),
-          Promise.all(nbhds.map((n: Neighborhood) =>
-            fetch(`/api/businesses?neighborhoodId=${n.id}`).then(r => r.json())
-          )),
-        ])
-        setHouses(houseArrays.flat())
-        setBusinesses(bizArrays.flat())
-        setDataLoading(false)
-      })
-      .catch(() => setDataLoading(false))
+    // Load houses when zoomed in, clear when zoomed out (debounced 300ms)
+    clearTimeout(bboxFetchTimeout.current)
+    if (zoom >= HOUSE_ZOOM_THRESHOLD) {
+      bboxFetchTimeout.current = setTimeout(() => {
+        if (currentBoundsRef.current) fetchHousesForBounds(currentBoundsRef.current)
+      }, 300)
+    } else {
+      setHouses([])
+    }
   }, [])
 
   const [searchOpen, setSearchOpen] = useState(false)
@@ -123,12 +150,9 @@ export function MapShell({ userRole }: Props) {
       return
     }
     setPendingLocation(null)
-    fetch('/api/neighborhoods')
-      .then(r => r.json())
-      .then((nbhds: Neighborhood[]) =>
-        Promise.all(nbhds.map(n => fetch(`/api/houses?neighborhoodId=${n.id}`).then(r => r.json())))
-      )
-      .then(arrays => setHouses(arrays.flat()))
+    if (currentBoundsRef.current && currentZoomRef.current >= HOUSE_ZOOM_THRESHOLD) {
+      fetchHousesForBounds(currentBoundsRef.current)
+    }
   }
 
   return (
@@ -183,11 +207,10 @@ export function MapShell({ userRole }: Props) {
 
       <SearchOverlay
         open={searchOpen}
-        houses={effectiveHouses}
         businesses={businesses}
         onClose={() => setSearchOpen(false)}
         onSelect={result => {
-          const { lat, lng } = result.kind === 'house' ? result.item : result.item
+          const { lat, lng } = result.item
           setTargetLocation({ lat, lng })
           if (result.kind === 'house') {
             setSelectedBusiness(null)

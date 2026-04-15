@@ -10,9 +10,13 @@ export const GET = withErrorHandling(async () => {
   const session = await auth()
   requireRole(session?.user?.role, 'admin', 'manager', 'rep')
   const rows = await db.execute(
-    sql`SELECT id, name, team_id, created_at,
-        ST_AsGeoJSON(boundary)::json as boundary
-        FROM neighborhoods ORDER BY name`
+    sql`SELECT n.id, n.name, n.team_id, n.created_at,
+        ST_AsGeoJSON(n.boundary)::json as boundary,
+        COUNT(h.id)::int as "houseCount"
+        FROM neighborhoods n
+        LEFT JOIN houses h ON h.neighborhood_id = n.id
+        GROUP BY n.id
+        ORDER BY n.name`
   )
   return NextResponse.json(rows.rows)
 })
