@@ -8,12 +8,10 @@ type Status = 'idle' | 'parsing' | 'importing' | 'done' | 'error'
 
 type ParcelItem = {
   ownerName: string
-  geom: object
+  address: string  // normalized "NUMBER STREET" e.g. "1695 N 350 WEST ST"
 }
 
-type Bbox = [number, number, number, number] // [minLng, minLat, maxLng, maxLat]
-
-// Field names used by SGID / ArcGIS exports (try in order)
+// Owner name field names used by SGID / ArcGIS exports
 const OWNER_FIELDS = [
   'OWN_NAME1', 'own_name1',
   'OWNERNAME', 'OwnerName', 'owner_name',
@@ -22,35 +20,20 @@ const OWNER_FIELDS = [
   'NAME1', 'name1',
 ]
 
-function detectOwnerField(props: Record<string, unknown>): string | null {
-  for (const field of OWNER_FIELDS) {
+// Address field names used by SGID / ArcGIS exports
+const ADDRESS_FIELDS = [
+  'PARCEL_ADD', 'parcel_add',
+  'SITUS_ADDR', 'situs_addr',
+  'SITE_ADDRESS', 'site_address',
+  'ADDRESS', 'address',
+  'ADDR', 'addr',
+]
+
+function detectField(props: Record<string, unknown>, candidates: string[]): string | null {
+  for (const field of candidates) {
     if (typeof props[field] === 'string' && (props[field] as string).trim()) return field
   }
   return null
-}
-
-// Recursively walk coordinates array (handles Polygon, MultiPolygon)
-function geomBbox(geom: any): Bbox | null {
-  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity
-
-  function walk(c: any) {
-    if (!Array.isArray(c)) return
-    if (typeof c[0] === 'number') {
-      if (c[0] < minLng) minLng = c[0]
-      if (c[1] < minLat) minLat = c[1]
-      if (c[0] > maxLng) maxLng = c[0]
-      if (c[1] > maxLat) maxLat = c[1]
-    } else {
-      for (const item of c) walk(item)
-    }
-  }
-
-  walk(geom?.coordinates)
-  return isFinite(minLng) ? [minLng, minLat, maxLng, maxLat] : null
-}
-
-function bboxOverlaps(a: Bbox, b: Bbox): boolean {
-  return !(a[2] < b[0] || b[2] < a[0] || a[3] < b[1] || b[3] < a[1])
 }
 
 // "SMITH JOHN D" → "Smith John D"
@@ -58,14 +41,19 @@ function titleCase(s: string): string {
   return s.trim().replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
 }
 
-const BATCH_SIZE = 25
+// "1695 N 350 WEST ST, PROVO UT 84601" → "1695 N 350 WEST ST"
+function normalizeAddress(raw: string): string {
+  return raw.split(',')[0].trim().toUpperCase()
+}
+
+const BATCH_SIZE = 200
 
 export function ParcelImportClient() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
   const [progress, setProgress] = useState('')
-  const [detectedField, setDetectedField] = useState<string | null>(null)
+  const [detectedFields, setDetectedFields] = useState<{ owner: string; address: string } | null>(null)
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -73,7 +61,7 @@ export function ParcelImportClient() {
 
     setStatus('parsing')
     setMessage('')
-    setDetectedField(null)
+    setDetectedFields(null)
     setProgress('Reading file — this may take a moment for large files…')
 
     let features: any[]
@@ -100,85 +88,49 @@ export function ParcelImportClient() {
       return
     }
 
-    // Detect owner name field from first several features
+    // Detect field names from first several features
     let ownerField: string | null = null
+    let addressField: string | null = null
     for (const f of features.slice(0, 20)) {
-      ownerField = detectOwnerField(f.properties ?? {})
-      if (ownerField) break
+      const props = f.properties ?? {}
+      ownerField ??= detectField(props, OWNER_FIELDS)
+      addressField ??= detectField(props, ADDRESS_FIELDS)
+      if (ownerField && addressField) break
     }
 
-    if (!ownerField) {
+    if (!ownerField || !addressField) {
       const sampleKeys = Object.keys(features[0]?.properties ?? {}).slice(0, 12).join(', ')
       setStatus('error')
-      setMessage(`Could not detect owner name field. Available fields: ${sampleKeys || 'none'}`)
-      if (fileRef.current) fileRef.current.value = ''
-      return
-    }
-
-    setDetectedField(ownerField)
-
-    // Fetch neighborhood bounding boxes to filter out parcels outside our area
-    setProgress('Loading neighborhoods…')
-    let neighborhoodBbox: Bbox | null = null
-    try {
-      const res = await fetch('/api/neighborhoods')
-      if (res.ok) {
-        const nbhds: any[] = await res.json()
-        let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity
-        for (const n of nbhds) {
-          const b = geomBbox(n.boundary)
-          if (b) {
-            if (b[0] < minLng) minLng = b[0]
-            if (b[1] < minLat) minLat = b[1]
-            if (b[2] > maxLng) maxLng = b[2]
-            if (b[3] > maxLat) maxLat = b[3]
-          }
-        }
-        if (isFinite(minLng)) {
-          // Add 0.01° buffer (~1km) around neighborhood boundaries
-          neighborhoodBbox = [minLng - 0.01, minLat - 0.01, maxLng + 0.01, maxLat + 0.01]
-        }
-      }
-    } catch { /* skip bbox filtering if fetch fails */ }
-
-    setProgress('Filtering parcels…')
-
-    const items: ParcelItem[] = features
-      .filter(f => {
-        const gtype = f.geometry?.type
-        if (gtype !== 'Polygon' && gtype !== 'MultiPolygon') return false
-        if (typeof f.properties?.[ownerField!] !== 'string') return false
-        if (!f.properties[ownerField!].trim()) return false
-        // Skip parcels outside the neighborhood area
-        if (neighborhoodBbox) {
-          const parcelBbox = geomBbox(f.geometry)
-          if (parcelBbox && !bboxOverlaps(parcelBbox, neighborhoodBbox)) return false
-        }
-        return true
-      })
-      .map(f => ({
-        ownerName: titleCase(f.properties[ownerField!]),
-        geom: f.geometry,
-      }))
-
-    if (items.length === 0) {
-      setStatus('error')
       setMessage(
-        neighborhoodBbox
-          ? `No parcels found within your neighborhood area. Check that the file covers your neighborhoods.`
-          : `No parcel polygons with owner names found using field "${ownerField}".`
+        `Could not detect ${!ownerField ? 'owner name' : 'address'} field. ` +
+        `Available fields: ${sampleKeys || 'none'}`
       )
       if (fileRef.current) fileRef.current.value = ''
       return
     }
 
-    const filtered = features.length - items.length
+    setDetectedFields({ owner: ownerField, address: addressField })
+    setProgress('Extracting parcels…')
+
+    const items: ParcelItem[] = []
+    for (const f of features) {
+      const props = f.properties ?? {}
+      const owner = typeof props[ownerField] === 'string' ? props[ownerField].trim() : ''
+      const addr = typeof props[addressField] === 'string' ? props[addressField].trim() : ''
+      if (owner && addr) {
+        items.push({ ownerName: titleCase(owner), address: normalizeAddress(addr) })
+      }
+    }
+
+    if (items.length === 0) {
+      setStatus('error')
+      setMessage('No parcels with both an owner name and address found.')
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+
     setStatus('importing')
-    setProgress(
-      `Found ${items.length.toLocaleString()} parcels in your area` +
-      (filtered > 0 ? ` (filtered out ${filtered.toLocaleString()} outside neighborhoods)` : '') +
-      `. Importing…`
-    )
+    setProgress(`Found ${items.length.toLocaleString()} parcels. Importing…`)
 
     let totalUpdated = 0
     let totalCreated = 0
@@ -234,13 +186,15 @@ export function ParcelImportClient() {
             disabled={status === 'parsing' || status === 'importing'}
           />
           <p className="text-xs text-muted-foreground">
-            Full county files are fine — parcels outside your neighborhoods are filtered out automatically.
+            Large files (100 MB+) will take a moment to parse in the browser.
           </p>
         </div>
 
-        {detectedField && status !== 'error' && (
+        {detectedFields && status !== 'error' && (
           <p className="text-xs text-muted-foreground">
-            Owner name field detected: <code className="font-mono">{detectedField}</code>
+            Owner: <code className="font-mono">{detectedFields.owner}</code>
+            {' · '}
+            Address: <code className="font-mono">{detectedFields.address}</code>
           </p>
         )}
         {progress && <p className="text-sm text-muted-foreground">{progress}</p>}
@@ -248,7 +202,7 @@ export function ParcelImportClient() {
         {status === 'error' && <p className="text-sm text-destructive">{message}</p>}
 
         {status === 'done' && (
-          <Button variant="outline" onClick={() => { setStatus('idle'); setMessage(''); setDetectedField(null) }}>
+          <Button variant="outline" onClick={() => { setStatus('idle'); setMessage(''); setDetectedFields(null) }}>
             Import another file
           </Button>
         )}

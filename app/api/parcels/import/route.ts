@@ -7,7 +7,7 @@ import { sql } from 'drizzle-orm'
 
 type ParcelItem = {
   ownerName: string
-  geom: object // GeoJSON Polygon or MultiPolygon geometry
+  address: string  // normalized "NUMBER STREET", uppercase
 }
 
 export async function POST(req: NextRequest) {
@@ -20,29 +20,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Expected non-empty array' }, { status: 400 })
     }
 
-    const valid = items.filter(i => i.ownerName?.trim() && i.geom)
+    const valid = items.filter(i => i.ownerName?.trim() && i.address?.trim())
     if (valid.length === 0) {
       return NextResponse.json({ updated: 0, created: 0 })
     }
 
-    // One query:
-    // 1. Expand the input JSON array into (owner_name, geom) rows
-    // 2. Spatial join: find every house whose point falls within one of those polygons
-    // 3. UPDATE existing active household surnames
-    // 4. INSERT new households for houses with no active household yet
+    // Match parcels to houses by address string, then upsert household surnames.
+    //
+    // Normalization: upper(trim(number || ' ' || street)) on the house side
+    // should equal the pre-normalized address sent from the client
+    // (first segment before any comma, uppercased).
     const result = await db.execute(sql`
       WITH input AS (
         SELECT
-          (item->>'ownerName')::text                                      AS owner_name,
-          ST_SetSRID(ST_GeomFromGeoJSON(item->>'geom'), 4326)             AS geom
+          (item->>'ownerName')::text                    AS owner_name,
+          upper(trim((item->>'address')::text))         AS address
         FROM json_array_elements(${JSON.stringify(valid)}::json) AS item
       ),
       matched AS (
         SELECT DISTINCT ON (h.id)
-          h.id   AS house_id,
+          h.id        AS house_id,
           i.owner_name
         FROM input i
-        JOIN houses h ON ST_Within(h.location, i.geom)
+        JOIN houses h
+          ON upper(trim(h.number || ' ' || h.street)) = i.address
         ORDER BY h.id, i.owner_name
       ),
       updated AS (
