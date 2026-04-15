@@ -107,10 +107,10 @@ async function main() {
   }
   console.log(`  → ${inserted} neighborhoods inserted`)
 
-  // 4. Re-assign houses to precinct boundaries via spatial join
+  // 4. Re-assign houses and businesses to precinct boundaries via spatial join
   const upperCities = allCities.map(c => c.toUpperCase())
   console.log('Re-assigning houses to precincts (this may take a minute)...')
-  const { rowCount: assigned } = await pool.query(
+  const { rowCount: assignedHouses } = await pool.query(
     `UPDATE houses
      SET neighborhood_id = (
        SELECT n.id FROM neighborhoods n
@@ -120,7 +120,19 @@ async function main() {
      WHERE UPPER(city) = ANY($1)`,
     [upperCities]
   )
-  console.log(`  → ${assigned} houses assigned`)
+  console.log(`  → ${assignedHouses} houses assigned`)
+
+  console.log('Re-assigning businesses to precincts...')
+  const { rowCount: assignedBiz } = await pool.query(
+    `UPDATE businesses
+     SET neighborhood_id = (
+       SELECT n.id FROM neighborhoods n
+       WHERE ST_Within(businesses.location, n.boundary)
+       LIMIT 1
+     )
+     WHERE neighborhood_id IS NULL`
+  )
+  console.log(`  → ${assignedBiz} businesses assigned`)
 
   await pool.end()
   console.log('Done.')
