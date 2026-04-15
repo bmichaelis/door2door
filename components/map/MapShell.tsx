@@ -132,7 +132,7 @@ export function MapShell({ userRole }: Props) {
   }
 
   return (
-    <div className="relative h-[calc(100vh-56px)] w-full">
+    <div className="relative h-[calc(100dvh-56px)] w-full">
       {dataLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
           <p className="text-sm text-muted-foreground">Loading map data…</p>
