@@ -61,7 +61,7 @@ export default function MapView({
       onMove={e => {
         setViewport(e.viewState)
         const b = e.target.getBounds()
-        onViewportChange?.(
+        if (b) onViewportChange?.(
           e.viewState.latitude,
           e.viewState.longitude,
           e.viewState.zoom,
