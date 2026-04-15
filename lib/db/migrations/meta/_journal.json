@@ -29,6 +29,20 @@
       "when": 1776182284070,
       "tag": "0003_high_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776188616162,
+      "tag": "0004_nebulous_harpoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776203717257,
+      "tag": "0005_icy_living_mummy",
+      "breakpoints": true
     }
   ]
 }
