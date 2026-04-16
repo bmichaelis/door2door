@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80">
+  <!-- Door frame -->
+  <rect width="60" height="80" rx="3" fill="#064e3b"/>
+
+  <!-- Door surface -->
+  <rect x="4" y="3" width="52" height="74" rx="2" fill="#0f766e"/>
+
+  <!-- Pin-shaped window (top quarter) -->
+  <path d="M30,7 C23,7 17,13 17,20 C17,26 21,31 25,34 L30,40 L35,34 C39,31 43,26 43,20 C43,13 37,7 30,7 Z" fill="#fef3c7"/>
+
+  <!-- Window inner warmth -->
+  <circle cx="30" cy="18" r="6" fill="#fde68a" opacity="0.8"/>
+  <circle cx="27.5" cy="15" r="2.5" fill="white" opacity="0.35"/>
+
+  <!-- Lower left panel -->
+  <rect x="9" y="60" width="17" height="14" rx="2" fill="#0d6e66"/>
+
+  <!-- Lower right panel -->
+  <rect x="34" y="60" width="17" height="14" rx="2" fill="#0d6e66"/>
+
+  <!-- Door knob (near right edge) -->
+  <circle cx="46" cy="47" r="2.5" fill="#d97706"/>
+</svg>
