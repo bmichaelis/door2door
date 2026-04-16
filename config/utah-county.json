@@ -1,0 +1,54 @@
+{
+  "name": "Utah County",
+  "agrcCountyId": 25,
+  "addresses": {
+    "file": "data/utah-addresses-county.geojson"
+  },
+  "taxParcels": {
+    "gdb": "data/TaxParcels.gdb",
+    "layer": "TaxParcel",
+    "propTypeField": "PROP_TYPE_DESCR",
+    "propTypeValue": "SINGLE FAMILY RES",
+    "ownerNameField": "OWNER_NAME",
+    "houseNumField": "SITE_HOUSE_NUM",
+    "preDirField": "SITE_PRE_DIR",
+    "streetNameField": "SITE_STREET_NAME",
+    "streetTypeField": "SITE_STREET_TYPE"
+  },
+  "precincts": {
+    "cities": {
+      "AF": { "city": "American Fork",    "label": "American Fork"    },
+      "AL": { "city": "Alpine",           "label": "Alpine"           },
+      "BL": { "city": "Bluffdale",        "label": "Bluffdale"        },
+      "CF": { "city": "Cedar Fort",       "label": "Cedar Fort"       },
+      "CH": { "city": "Cedar Hills",      "label": "Cedar Hills"      },
+      "DR": { "city": "Draper",           "label": "Draper"           },
+      "EM": { "city": "Eagle Mountain",   "label": "Eagle Mountain"   },
+      "ER": { "city": "Elk Ridge",        "label": "Elk Ridge"        },
+      "FF": { "city": "Fairfield",        "label": "Fairfield"        },
+      "GE": { "city": "Genola",           "label": "Genola"           },
+      "GO": { "city": "Goshen",           "label": "Goshen"           },
+      "HI": { "city": "Highland",         "label": "Highland"         },
+      "LE": { "city": "Lehi",             "label": "Lehi"             },
+      "LI": { "city": "Lindon",           "label": "Lindon"           },
+      "MA": { "city": "Mapleton",         "label": "Mapleton"         },
+      "NE": { "city": "Unincorporated",   "label": "Unincorporated NE"},
+      "NW": { "city": "Unincorporated",   "label": "Unincorporated NW"},
+      "OR": { "city": "Orem",             "label": "Orem"             },
+      "PA": { "city": "Payson",           "label": "Payson"           },
+      "PG": { "city": "Pleasant Grove",   "label": "Pleasant Grove"   },
+      "PR": { "city": "Provo",            "label": "Provo"            },
+      "SA": { "city": "Salem",            "label": "Salem"            },
+      "SE": { "city": "Unincorporated",   "label": "Unincorporated SE"},
+      "SF": { "city": "Spanish Fork",     "label": "Spanish Fork"     },
+      "SL": { "city": "Unincorporated",   "label": "Unincorporated S" },
+      "SP": { "city": "Springville",      "label": "Springville"      },
+      "SQ": { "city": "Santaquin",        "label": "Santaquin"        },
+      "SR": { "city": "Saratoga Springs", "label": "Saratoga Springs" },
+      "SW": { "city": "Unincorporated",   "label": "Unincorporated SW"},
+      "UL": { "city": "Unincorporated",   "label": "Unincorporated"   },
+      "VI": { "city": "Vineyard",         "label": "Vineyard"         },
+      "WH": { "city": "Woodland Hills",   "label": "Woodland Hills"   }
+    }
+  }
+}

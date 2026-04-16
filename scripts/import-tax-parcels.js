@@ -1,29 +1,61 @@
 #!/usr/bin/env node
-// Imports residential owner surnames from Utah County Tax Parcels GDB.
-// Run: node --env-file=.env.local scripts/import-tax-parcels.js
+// Imports residential owner surnames from a county Tax Parcels GDB.
+// Run: node --env-file=.env.local scripts/import-tax-parcels.js --county config/utah-county.json
 //
 // Address construction from component fields:
-//   "NUM [PRE] NAME [TYPE|ST]"  — appends ST when SITE_STREET_TYPE is empty (grid streets + some named)
+//   "NUM [PRE] NAME [TYPE|ST]"  — appends ST when street type field is empty (grid streets + some named)
 //
 // Name extraction:
-//   "PATTERSON, MICHAEL A & LISBETH" → surname "Patterson", first "Michael"
-//   "GREAT HEIGHTS VENTURES LLC"     → surname kept as-is (no comma), first null
+//   "PATTERSON, MICHAEL A & LISBETH" → surname "Patterson", first "Michael", spouse "Lisbeth"
+//   "GREAT HEIGHTS VENTURES LLC"     → surname kept as-is (no comma), first/spouse null
 
 const { spawn } = require('child_process')
 const readline = require('readline')
 const { Pool } = require('pg')
+const fs = require('fs')
 
 const BATCH_SIZE = 500
-const GDB_PATH = 'data/TaxParcels.gdb'
+
+function parseArgs() {
+  const args = process.argv.slice(2)
+  let countyConfig = null
+  let gdbOverride = null
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--county' && args[i + 1]) countyConfig = JSON.parse(fs.readFileSync(args[++i], 'utf8'))
+    if (args[i] === '--gdb' && args[i + 1]) gdbOverride = args[++i]
+  }
+  if (!countyConfig) { console.error('Usage: import-tax-parcels.js --county <config-file> [--gdb <path>]'); process.exit(1) }
+  const tp = countyConfig.taxParcels
+  return {
+    gdbPath:        gdbOverride ?? tp.gdb,
+    layer:          tp.layer          ?? 'TaxParcel',
+    propTypeField:  tp.propTypeField  ?? 'PROP_TYPE_DESCR',
+    propTypeValue:  tp.propTypeValue  ?? 'SINGLE FAMILY RES',
+    ownerNameField: tp.ownerNameField ?? 'OWNER_NAME',
+    houseNumField:  tp.houseNumField  ?? 'SITE_HOUSE_NUM',
+    preDirField:    tp.preDirField    ?? 'SITE_PRE_DIR',
+    streetNameField:tp.streetNameField?? 'SITE_STREET_NAME',
+    streetTypeField:tp.streetTypeField?? 'SITE_STREET_TYPE',
+  }
+}
 
 async function main() {
+  const cfg = parseArgs()
   const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+
+  const selectFields = [
+    cfg.ownerNameField,
+    cfg.houseNumField,
+    cfg.preDirField,
+    cfg.streetNameField,
+    cfg.streetTypeField,
+  ].join(',')
 
   const ogrProc = spawn('ogr2ogr', [
     '-f', 'CSV', '/vsistdout/',
-    GDB_PATH, 'TaxParcel',
-    '-select', 'OWNER_NAME,SITE_HOUSE_NUM,SITE_PRE_DIR,SITE_STREET_NAME,SITE_STREET_TYPE',
-    '-where', "PROP_TYPE_DESCR = 'SINGLE FAMILY RES' AND SITE_HOUSE_NUM IS NOT NULL AND OWNER_NAME IS NOT NULL",
+    cfg.gdbPath, cfg.layer,
+    '-select', selectFields,
+    '-where', `${cfg.propTypeField} = '${cfg.propTypeValue}' AND ${cfg.houseNumField} IS NOT NULL AND ${cfg.ownerNameField} IS NOT NULL`,
   ])
 
   const rl = readline.createInterface({ input: ogrProc.stdout, crlfDelay: Infinity })
@@ -42,8 +74,8 @@ async function main() {
     const vals = parseCsvLine(line)
     const row = Object.fromEntries(headers.map((h, i) => [h, (vals[i] ?? '').trim()]))
 
-    const address = buildAddress(row)
-    const { surname, firstName, spouseName } = extractNames(row.OWNER_NAME)
+    const address = buildAddress(row, cfg)
+    const { surname, firstName, spouseName } = extractNames(row[cfg.ownerNameField])
     if (!address || !surname) continue
 
     batch.push({ ownerName: surname, firstName: firstName ?? null, spouseName: spouseName ?? null, address })
@@ -69,16 +101,16 @@ async function main() {
   console.log(`\nDone: ${totalUpdated} households updated, ${totalCreated} new households created (${totalProcessed.toLocaleString()} parcels processed)`)
 }
 
-function buildAddress(row) {
-  const num  = row.SITE_HOUSE_NUM
-  const pre  = row.SITE_PRE_DIR
-  const name = row.SITE_STREET_NAME
-  const type = row.SITE_STREET_TYPE
+function buildAddress(row, cfg) {
+  const num  = row[cfg.houseNumField]
+  const pre  = row[cfg.preDirField]
+  const name = row[cfg.streetNameField]
+  const type = row[cfg.streetTypeField]
   if (!num || !name) return null
   const parts = [num]
   if (pre) parts.push(pre)
   parts.push(name)
-  parts.push(type || 'ST')   // grid streets have no type — OpenAddresses always uses ST
+  parts.push(type || 'ST')
   return parts.join(' ').toUpperCase()
 }
 

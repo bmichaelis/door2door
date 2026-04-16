@@ -1,0 +1,62 @@
+{
+  "name": "Salt Lake County",
+  "agrcCountyId": 18,
+  "addresses": {
+    "file": "data/salt-lake-addresses-county.geojson"
+  },
+  "taxParcels": {
+    "gdb": "data/SaltLakeTaxParcels.gdb",
+    "layer": "TaxParcel",
+    "propTypeField": "PROP_TYPE_DESCR",
+    "propTypeValue": "SINGLE FAMILY RES",
+    "ownerNameField": "OWNER_NAME",
+    "houseNumField": "SITE_HOUSE_NUM",
+    "preDirField": "SITE_PRE_DIR",
+    "streetNameField": "SITE_STREET_NAME",
+    "streetTypeField": "SITE_STREET_TYPE"
+  },
+  "precincts": {
+    "cities": {
+      "ALT": { "city": "Alta",                    "label": "Alta"                    },
+      "BGC": { "city": "Unincorporated",           "label": "Unincorporated Big Cottonwood" },
+      "BLF": { "city": "Bluffdale",               "label": "Bluffdale"               },
+      "BRT": { "city": "Unincorporated",           "label": "Unincorporated Brighton" },
+      "CBL": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "COP": { "city": "Copperton",               "label": "Copperton"               },
+      "COT": { "city": "Cottonwood Heights",       "label": "Cottonwood Heights"      },
+      "DRP": { "city": "Draper",                  "label": "Draper"                  },
+      "EMG": { "city": "Unincorporated",           "label": "Unincorporated Emigration"},
+      "FED": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "GNT": { "city": "Unincorporated",           "label": "Unincorporated Granite"  },
+      "GSL": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "HER": { "city": "Herriman",                "label": "Herriman"                },
+      "HOL": { "city": "Holladay",                "label": "Holladay"                },
+      "ISL": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "KRN": { "city": "Kearns",                  "label": "Kearns"                  },
+      "LTC": { "city": "Unincorporated",           "label": "Unincorporated Little Cottonwood" },
+      "MAG": { "city": "Magna",                   "label": "Magna"                   },
+      "MID": { "city": "Midvale",                 "label": "Midvale"                 },
+      "MIL": { "city": "Millcreek",               "label": "Millcreek"               },
+      "MOL": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "MUR": { "city": "Murray",                  "label": "Murray"                  },
+      "NRV": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "OBR": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "OQR": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "PCN": { "city": "Unincorporated",           "label": "Unincorporated Parleys Canyon" },
+      "RIV": { "city": "Riverton",                "label": "Riverton"                },
+      "SAN": { "city": "Sandy",                   "label": "Sandy"                   },
+      "SHL": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "SIL": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "SJD": { "city": "South Jordan",            "label": "South Jordan"            },
+      "SLC": { "city": "Salt Lake City",          "label": "Salt Lake City"          },
+      "SSL": { "city": "South Salt Lake",         "label": "South Salt Lake"         },
+      "SWT": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "TAY": { "city": "Taylorsville",            "label": "Taylorsville"            },
+      "WCN": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "WCR": { "city": "Unincorporated",           "label": "Unincorporated"          },
+      "WHT": { "city": "White City",              "label": "White City"              },
+      "WJD": { "city": "West Jordan",             "label": "West Jordan"             },
+      "WVC": { "city": "West Valley City",        "label": "West Valley City"        }
+    }
+  }
+}

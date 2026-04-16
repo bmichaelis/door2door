@@ -1,21 +1,40 @@
 #!/usr/bin/env node
-// Imports all Utah County addresses from the OpenAddresses county GeoJSON file.
+// Imports residential addresses from an OpenAddresses county GeoJSON file.
 // Skips records already in the DB (conflict on external_id).
 // Assigns neighborhood_id via spatial join on import.
-// Run: node --env-file=.env.local scripts/import-county-addresses.js
+// Run: node --env-file=.env.local scripts/import-county-addresses.js --county config/utah-county.json
+//      node --env-file=.env.local scripts/import-county-addresses.js --county config/utah-county.json --file data/my-file.geojson
 
 const fs = require('fs')
 const readline = require('readline')
 const { Pool } = require('pg')
 
 const BATCH_SIZE = 500
-const INPUT_FILE = 'data/utah-addresses-county.geojson'
+
+function parseArgs() {
+  const args = process.argv.slice(2)
+  let countyConfig = null
+  let fileOverride = null
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--county' && args[i + 1]) countyConfig = JSON.parse(fs.readFileSync(args[++i], 'utf8'))
+    if (args[i] === '--file' && args[i + 1]) fileOverride = args[++i]
+  }
+  if (!countyConfig) { console.error('Usage: import-county-addresses.js --county <config-file> [--file <path>]'); process.exit(1) }
+  return { inputFile: fileOverride ?? countyConfig.addresses.file }
+}
 
 async function main() {
+  const { inputFile } = parseArgs()
+
+  if (!fs.existsSync(inputFile)) {
+    console.error(`File not found: ${inputFile}`)
+    process.exit(1)
+  }
+
   const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
   const rl = readline.createInterface({
-    input: fs.createReadStream(INPUT_FILE),
+    input: fs.createReadStream(inputFile),
     crlfDelay: Infinity,
   })
 
@@ -27,7 +46,6 @@ async function main() {
   async function flushBatch() {
     if (!batch.length) return
 
-    // Spatial join: find neighborhood_id for each point in the batch
     const pointValues = batch.map((r, i) =>
       `(${i}::int, ${r.lng}::float8, ${r.lat}::float8)`
     ).join(', ')
@@ -48,7 +66,6 @@ async function main() {
       neighborhoodIds.set(Number(row.idx), row.neighborhood_id ?? null)
     }
 
-    // Build bulk insert
     const valuePlaceholders = []
     const params = []
     let p = 1
@@ -73,17 +90,14 @@ async function main() {
     batch = []
   }
 
+  console.log(`Importing addresses from ${inputFile}...`)
   for await (const line of rl) {
     const trimmed = line.trim()
     if (!trimmed) continue
     totalLines++
 
     let feature
-    try {
-      feature = JSON.parse(trimmed)
-    } catch {
-      continue
-    }
+    try { feature = JSON.parse(trimmed) } catch { continue }
 
     if (feature?.type !== 'Feature') continue
     const props = feature.properties ?? {}
@@ -110,7 +124,6 @@ async function main() {
   }
 
   await flushBatch()
-
   process.stdout.write('\n')
   console.log(`Done. ${totalLines.toLocaleString()} lines → ${totalImported.toLocaleString()} imported, ${totalSkipped.toLocaleString()} skipped (already existed).`)
   await pool.end()

@@ -1,47 +1,24 @@
 #!/usr/bin/env node
-// Imports Utah County voting precincts from AGRC Open SGID as neighborhoods.
-// Replaces all existing neighborhoods for Utah County cities with official precinct boundaries.
-// Run: node --env-file=.env.local scripts/import-precincts.js
+// Imports voting precincts from AGRC Open SGID as neighborhoods.
+// Run: node --env-file=.env.local scripts/import-precincts.js --county config/utah-county.json
 
 const { Pool } = require('pg')
+const fs = require('fs')
 
-// Maps 2-letter VISTA city code → { city: stored in neighborhoods.city, label: used in neighborhood name }
-const CITY_CODES = {
-  AF: { city: 'American Fork',    label: 'American Fork'    },
-  AL: { city: 'Alpine',           label: 'Alpine'           },
-  BL: { city: 'Bluffdale',        label: 'Bluffdale'        },
-  CF: { city: 'Cedar Fort',       label: 'Cedar Fort'       },
-  CH: { city: 'Cedar Hills',      label: 'Cedar Hills'      },
-  DR: { city: 'Draper',           label: 'Draper'           },
-  EM: { city: 'Eagle Mountain',   label: 'Eagle Mountain'   },
-  ER: { city: 'Elk Ridge',        label: 'Elk Ridge'        },
-  FF: { city: 'Fairfield',        label: 'Fairfield'        },
-  GE: { city: 'Genola',           label: 'Genola'           },
-  GO: { city: 'Goshen',           label: 'Goshen'           },
-  HI: { city: 'Highland',         label: 'Highland'         },
-  LE: { city: 'Lehi',             label: 'Lehi'             },
-  LI: { city: 'Lindon',           label: 'Lindon'           },
-  MA: { city: 'Mapleton',         label: 'Mapleton'         },
-  NE: { city: 'Unincorporated',   label: 'Unincorporated NE'},
-  NW: { city: 'Unincorporated',   label: 'Unincorporated NW'},
-  OR: { city: 'Orem',             label: 'Orem'             },
-  PA: { city: 'Payson',           label: 'Payson'           },
-  PG: { city: 'Pleasant Grove',   label: 'Pleasant Grove'   },
-  PR: { city: 'Provo',            label: 'Provo'            },
-  SA: { city: 'Salem',            label: 'Salem'            },
-  SE: { city: 'Unincorporated',   label: 'Unincorporated SE'},
-  SF: { city: 'Spanish Fork',     label: 'Spanish Fork'     },
-  SL: { city: 'Unincorporated',   label: 'Unincorporated S' },
-  SP: { city: 'Springville',      label: 'Springville'      },
-  SQ: { city: 'Santaquin',        label: 'Santaquin'        },
-  SR: { city: 'Saratoga Springs', label: 'Saratoga Springs' },
-  SW: { city: 'Unincorporated',   label: 'Unincorporated SW'},
-  UL: { city: 'Unincorporated',   label: 'Unincorporated'   },
-  VI: { city: 'Vineyard',         label: 'Vineyard'         },
-  WH: { city: 'Woodland Hills',   label: 'Woodland Hills'   },
+function parseArgs() {
+  const args = process.argv.slice(2)
+  const countyFlag = args.indexOf('--county')
+  if (countyFlag < 0 || !args[countyFlag + 1]) {
+    console.error('Usage: import-precincts.js --county <config-file>')
+    process.exit(1)
+  }
+  return JSON.parse(fs.readFileSync(args[countyFlag + 1], 'utf8'))
 }
 
 async function main() {
+  const county = parseArgs()
+  const { agrcCountyId, name: countyName, precincts: { cities: CITY_CODES } } = county
+
   const pool = new Pool({ connectionString: process.env.DATABASE_URL })
   const agrc = new Pool({
     host: 'opensgid.ugrc.utah.gov',
@@ -52,24 +29,39 @@ async function main() {
     ssl: false,
   })
 
-  // 1. Fetch all Utah County precincts with WGS84 polygon geometry
-  console.log('Fetching Utah County precincts from AGRC Open SGID...')
+  // 1. Fetch all precincts for this county with WGS84 polygon geometry
+  console.log(`Fetching ${countyName} precincts from AGRC Open SGID...`)
   const { rows: precincts } = await agrc.query(`
     SELECT
       precinctid,
-      SUBSTRING(precinctid, 3, 2)  AS city_code,
-      SUBSTRING(precinctid, 5)     AS precinct_num,
       ST_AsGeoJSON(
         ST_Force2D(ST_GeometryN(ST_Transform(shape, 4326), 1))
       )::json AS geojson
     FROM political.vista_ballot_areas
-    WHERE countyid = 25
+    WHERE countyid = $1
     ORDER BY precinctid
-  `)
+  `, [agrcCountyId])
   await agrc.end()
   console.log(`  → ${precincts.length} precincts fetched`)
 
-  // 2. Delete existing Utah County neighborhoods (and clear house assignments first)
+  // Extract city code from precinctid: strip leading digits (county prefix) then read non-digit prefix
+  function extractCityCode(precinctid) {
+    const stripped = precinctid.replace(/^\d+/, '')
+    const m = stripped.match(/^([A-Z]+)/)
+    return m ? m[1] : null
+  }
+
+  // Warn about any codes not in the config
+  const unknownCodes = new Set()
+  for (const row of precincts) {
+    const code = extractCityCode(row.precinctid)
+    if (code && !CITY_CODES[code]) unknownCodes.add(code)
+  }
+  if (unknownCodes.size > 0) {
+    console.warn(`  ⚠ Unknown city codes (add to config to name them): ${[...unknownCodes].join(', ')}`)
+  }
+
+  // 2. Delete existing neighborhoods for this county's cities (and clear house/business assignments)
   const allCities = [...new Set(Object.values(CITY_CODES).map(v => v.city))]
   console.log('Clearing existing neighborhoods...')
   await pool.query(
@@ -91,13 +83,17 @@ async function main() {
   // 3. Insert precincts as neighborhoods
   console.log('Inserting precinct neighborhoods...')
   let inserted = 0
+  let skipped = 0
   for (const row of precincts) {
-    const info = CITY_CODES[row.city_code]
-    if (!info) {
-      console.warn(`  Unknown city code: ${row.city_code} (precinctid=${row.precinctid})`)
-      continue
-    }
-    const name = `${info.label} ${row.precinct_num}`
+    const code = extractCityCode(row.precinctid)
+    const info = CITY_CODES[code]
+    if (!info) { skipped++; continue }
+
+    // Precinct number is everything after the city code (with leading digits stripped from id)
+    const stripped = row.precinctid.replace(/^\d+/, '')
+    const num = stripped.replace(/^[A-Z]+/, '')
+    const name = `${info.label} ${num}`
+
     await pool.query(
       `INSERT INTO neighborhoods (name, city, boundary)
        VALUES ($1, $2, ST_SetSRID(ST_GeomFromGeoJSON($3), 4326))`,
@@ -105,7 +101,7 @@ async function main() {
     )
     inserted++
   }
-  console.log(`  → ${inserted} neighborhoods inserted`)
+  console.log(`  → ${inserted} neighborhoods inserted, ${skipped} skipped (unmapped codes)`)
 
   // 4. Re-assign houses and businesses to precinct boundaries via spatial join
   const upperCities = allCities.map(c => c.toUpperCase())
