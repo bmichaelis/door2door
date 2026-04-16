@@ -108,6 +108,7 @@ export function MapShell({ userRole }: Props) {
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessRow | null>(null)
   const [overrides, setOverrides] = useState<Map<string, Partial<HouseWithOutcome>>>(new Map())
   const [selectedHouse, setSelectedHouse] = useState<HouseWithOutcome | null>(null)
+  const [highlightedHouseId, setHighlightedHouseId] = useState<string | null>(null)
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
 
@@ -170,11 +171,13 @@ export function MapShell({ userRole }: Props) {
         mapStyle={mapStyle}
         initialCenter={lastCenter}
         targetLocation={targetLocation}
-        onHouseClick={house => { setSelectedBusiness(null); setSelectedHouse(house) }}
-        onBusinessClick={business => { setSelectedHouse(null); setSelectedBusiness(business) }}
+        selectedHouseId={highlightedHouseId}
+        onHouseClick={house => { setSelectedBusiness(null); setSelectedHouse(house); setHighlightedHouseId(house.id) }}
+        onBusinessClick={business => { setSelectedHouse(null); setSelectedBusiness(business); setHighlightedHouseId(null) }}
         onMapClick={(lat, lng) => {
           setSelectedHouse(null)
           setSelectedBusiness(null)
+          setHighlightedHouseId(null)
           setPendingLocation({ lat, lng })
         }}
         onViewportChange={handleViewportChange}
@@ -215,9 +218,11 @@ export function MapShell({ userRole }: Props) {
           if (result.kind === 'house') {
             setSelectedBusiness(null)
             setSelectedHouse(result.item)
+            setHighlightedHouseId(result.item.id)
           } else {
             setSelectedHouse(null)
             setSelectedBusiness(result.item)
+            setHighlightedHouseId(null)
           }
         }}
       />

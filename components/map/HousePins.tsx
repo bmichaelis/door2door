@@ -17,9 +17,10 @@ type HouseWithOutcome = HouseRow & { lastOutcome?: string | null }
 type Props = {
   houses: HouseWithOutcome[]
   onHouseClick: (house: HouseWithOutcome) => void
+  selectedHouseId?: string | null
 }
 
-export function HousePins({ houses }: Props) {
+export function HousePins({ houses, selectedHouseId }: Props) {
   const geojson: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',
     features: houses.map(h => ({
@@ -36,6 +37,20 @@ export function HousePins({ houses }: Props) {
 
   return (
     <Source id="houses" type="geojson" data={geojson}>
+      <Layer
+        id="house-circle-highlight"
+        minzoom={14}
+        type="circle"
+        filter={['==', ['get', 'id'], selectedHouseId ?? '']}
+        paint={{
+          'circle-color': 'rgba(0,0,0,0)',
+          'circle-radius': 13,
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#3b82f6',
+          'circle-opacity': 0,
+          'circle-stroke-opacity': 1,
+        }}
+      />
       <Layer
         id="house-circles"
         minzoom={14}

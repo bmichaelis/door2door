@@ -20,6 +20,7 @@ type Props = {
   mapStyle: MapStyle
   initialCenter?: { lat: number; lng: number }
   targetLocation?: { lat: number; lng: number } | null
+  selectedHouseId?: string | null
   onHouseClick: (house: HouseRow) => void
   onBusinessClick?: (business: BusinessRow) => void
   onMapClick?: (lat: number, lng: number) => void
@@ -28,7 +29,7 @@ type Props = {
 
 export default function MapView({
   neighborhoods, houses, businesses, layers, mapStyle,
-  initialCenter, targetLocation,
+  initialCenter, targetLocation, selectedHouseId,
   onHouseClick, onBusinessClick, onMapClick, onViewportChange,
 }: Props) {
   const mapRef = useRef<MapRef>(null)
@@ -87,7 +88,7 @@ export default function MapView({
     >
       <NavigationControl position="top-right" />
       <NeighborhoodLayer neighborhoods={neighborhoods} />
-      {layers.homes && <HousePins houses={houses} onHouseClick={onHouseClick} />}
+      {layers.homes && <HousePins houses={houses} onHouseClick={onHouseClick} selectedHouseId={selectedHouseId} />}
       {layers.businesses && <BusinessPins businesses={businesses} />}
     </Map>
   )
