@@ -16,6 +16,7 @@ export const GET = withErrorHandling(async () => {
         FROM neighborhoods n
         LEFT JOIN houses h ON h.neighborhood_id = n.id
         GROUP BY n.id
+        HAVING COUNT(h.id) > 0
         ORDER BY n.name`
   )
   return NextResponse.json(rows.rows)
