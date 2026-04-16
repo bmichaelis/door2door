@@ -33,6 +33,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     houseId: body.houseId,
     surname: body.surname ?? null,
     headOfHouseholdName: body.headOfHouseholdName ?? null,
+    spouseName: body.spouseName ?? null,
     active: true,
   }).returning()
   return NextResponse.json(household, { status: 201 })

@@ -6,19 +6,20 @@ import { Label } from '@/components/ui/label'
 
 type Props = {
   houseId: string
-  onSubmit: (data: { houseId: string; surname: string; headOfHouseholdName: string }) => Promise<void>
+  onSubmit: (data: { houseId: string; surname: string; headOfHouseholdName: string; spouseName: string }) => Promise<void>
   onCancel: () => void
 }
 
 export function HouseholdForm({ houseId, onSubmit, onCancel }: Props) {
   const [surname, setSurname] = useState('')
   const [head, setHead] = useState('')
+  const [spouse, setSpouse] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    await onSubmit({ houseId, surname, headOfHouseholdName: head })
+    await onSubmit({ houseId, surname, headOfHouseholdName: head, spouseName: spouse })
     setLoading(false)
   }
 
@@ -32,8 +33,12 @@ export function HouseholdForm({ houseId, onSubmit, onCancel }: Props) {
         <Input value={surname} onChange={e => setSurname(e.target.value)} placeholder="e.g. Smith" />
       </div>
       <div>
-        <Label>Head of Household</Label>
-        <Input value={head} onChange={e => setHead(e.target.value)} placeholder="e.g. John Smith" />
+        <Label>Head of Household First Name</Label>
+        <Input value={head} onChange={e => setHead(e.target.value)} placeholder="e.g. John" />
+      </div>
+      <div>
+        <Label>Spouse First Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <Input value={spouse} onChange={e => setSpouse(e.target.value)} placeholder="e.g. Jane" />
       </div>
       <div className="flex gap-2">
         <Button type="submit" disabled={loading} className="flex-1">

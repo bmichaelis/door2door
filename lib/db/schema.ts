@@ -105,6 +105,7 @@ export const households = pgTable('households', {
   houseId: uuid('house_id').notNull().references(() => houses.id),
   surname: text('surname'),
   headOfHouseholdName: text('head_of_household_name'),
+  spouseName: text('spouse_name'),
   active: boolean('active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })

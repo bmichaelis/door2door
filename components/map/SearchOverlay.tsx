@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import type { HouseWithOutcome } from '@/lib/houses'
 import type { BusinessRow } from './BusinessPins'
 
-type HouseSearchResult = HouseWithOutcome & { surname?: string | null; headOfHouseholdName?: string | null }
+type HouseSearchResult = HouseWithOutcome & { surname?: string | null; headOfHouseholdName?: string | null; spouseName?: string | null }
 
 type SearchResult =
   | { kind: 'house'; item: HouseSearchResult }
@@ -135,7 +135,12 @@ export function SearchOverlay({ open, businesses, onClose, onSelect }: Props) {
                     <p className="text-sm font-medium truncate">{r.item.number} {r.item.street}</p>
                     {r.item.surname
                       ? <p className="text-xs text-muted-foreground truncate">
-                          {[r.item.headOfHouseholdName, r.item.surname].filter(Boolean).join(' ')} · {r.item.city}
+                          {[
+                            r.item.headOfHouseholdName && r.item.spouseName
+                              ? `${r.item.headOfHouseholdName} or ${r.item.spouseName}`
+                              : r.item.headOfHouseholdName,
+                            r.item.surname,
+                          ].filter(Boolean).join(' ')} · {r.item.city}
                         </p>
                       : <p className="text-xs text-muted-foreground truncate">{r.item.city}</p>
                     }

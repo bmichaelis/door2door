@@ -11,7 +11,7 @@ import type { HouseRow } from '@/lib/db/schema'
 import { formatAddress, type HouseWithOutcome } from '@/lib/houses'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
-type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; active: boolean; createdAt: string }
+type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; spouseName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
 type Product = { id: string; name: string }
 
@@ -128,7 +128,7 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse,
     fetchData()
   }
 
-  async function handleNewHousehold(data: { houseId: string; surname: string; headOfHouseholdName: string }) {
+  async function handleNewHousehold(data: { houseId: string; surname: string; headOfHouseholdName: string; spouseName: string }) {
     const res = await fetch('/api/households', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -242,8 +242,12 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse,
                 {activeHousehold ? (
                   <>
                     <p className="font-medium">{activeHousehold.surname ?? 'Unknown family'}</p>
-                    {activeHousehold.headOfHouseholdName && (
-                      <p className="text-sm text-muted-foreground">{activeHousehold.headOfHouseholdName}</p>
+                    {(activeHousehold.headOfHouseholdName || activeHousehold.spouseName) && (
+                      <p className="text-sm text-muted-foreground">
+                        {activeHousehold.headOfHouseholdName && activeHousehold.spouseName
+                          ? `${activeHousehold.headOfHouseholdName} or ${activeHousehold.spouseName}`
+                          : activeHousehold.headOfHouseholdName ?? activeHousehold.spouseName}
+                      </p>
                     )}
                   </>
                 ) : (

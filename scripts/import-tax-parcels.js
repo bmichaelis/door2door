@@ -43,10 +43,10 @@ async function main() {
     const row = Object.fromEntries(headers.map((h, i) => [h, (vals[i] ?? '').trim()]))
 
     const address = buildAddress(row)
-    const { surname, firstName } = extractNames(row.OWNER_NAME)
+    const { surname, firstName, spouseName } = extractNames(row.OWNER_NAME)
     if (!address || !surname) continue
 
-    batch.push({ ownerName: surname, firstName: firstName ?? null, address })
+    batch.push({ ownerName: surname, firstName: firstName ?? null, spouseName: spouseName ?? null, address })
 
     if (batch.length >= BATCH_SIZE) {
       const r = await upsertBatch(pool, batch)
@@ -83,25 +83,34 @@ function buildAddress(row) {
 }
 
 function extractNames(raw) {
-  if (!raw) return { surname: null, firstName: null }
+  if (!raw) return { surname: null, firstName: null, spouseName: null }
   const commaIdx = raw.indexOf(',')
   if (commaIdx < 0) {
-    // No comma — business/entity name, title-case the whole thing
     const surname = raw.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-    return { surname, firstName: null }
+    return { surname, firstName: null, spouseName: null }
   }
-  // "PATTERSON, MICHAEL A & LISBETH"
+  // "PATTERSON, MICHAEL A & LISBETH"  or  "MICHAELIS, BRETT AND NICOLE"
   const surnameRaw = raw.slice(0, commaIdx)
   const surname = surnameRaw.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
 
-  // Take the first token after the comma; stop before middle initials (single letter) and "&"
   const afterComma = raw.slice(commaIdx + 1).trim()
-  const firstToken = afterComma.split(/\s+/)[0] ?? ''
-  // Skip single-letter tokens (initials) — shouldn't happen as first token but guard anyway
+
+  // Split on " & " or " AND " to find spouse
+  const spouseSep = afterComma.match(/\s+(?:&|AND)\s+(.+)$/i)
+  const firstPart = spouseSep ? afterComma.slice(0, afterComma.length - spouseSep[0].length) : afterComma
+  const spousePart = spouseSep ? spouseSep[1].trim() : null
+
+  const firstToken = firstPart.split(/\s+/)[0] ?? ''
   const firstName = firstToken.length > 1
     ? firstToken.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
     : null
-  return { surname, firstName }
+
+  const spouseToken = spousePart ? (spousePart.split(/\s+/)[0] ?? '') : ''
+  const spouseName = spouseToken.length > 1
+    ? spouseToken.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+    : null
+
+  return { surname, firstName, spouseName }
 }
 
 async function upsertBatch(pool, items) {
@@ -110,6 +119,7 @@ async function upsertBatch(pool, items) {
       SELECT
         (item->>'ownerName')::text                  AS owner_name,
         (item->>'firstName')::text                  AS first_name,
+        (item->>'spouseName')::text                 AS spouse_name,
         upper(trim((item->>'address')::text))       AS address
       FROM json_array_elements($1::json) AS item
     ),
@@ -117,7 +127,8 @@ async function upsertBatch(pool, items) {
       SELECT DISTINCT ON (h.id)
         h.id           AS house_id,
         i.owner_name,
-        i.first_name
+        i.first_name,
+        i.spouse_name
       FROM input i
       JOIN houses h ON upper(trim(h.number || ' ' || h.street)) = i.address
       ORDER BY h.id, i.owner_name
@@ -125,15 +136,16 @@ async function upsertBatch(pool, items) {
     updated AS (
       UPDATE households hh
       SET surname = m.owner_name,
-          head_of_household_name = m.first_name
+          head_of_household_name = m.first_name,
+          spouse_name = m.spouse_name
       FROM matched m
       WHERE hh.house_id = m.house_id
         AND hh.active = true
       RETURNING hh.house_id
     ),
     inserted AS (
-      INSERT INTO households (id, house_id, surname, head_of_household_name, active, created_at)
-      SELECT gen_random_uuid(), m.house_id, m.owner_name, m.first_name, true, now()
+      INSERT INTO households (id, house_id, surname, head_of_household_name, spouse_name, active, created_at)
+      SELECT gen_random_uuid(), m.house_id, m.owner_name, m.first_name, m.spouse_name, true, now()
       FROM matched m
       WHERE m.house_id NOT IN (SELECT house_id FROM updated)
         AND NOT EXISTS (
