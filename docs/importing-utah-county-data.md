@@ -77,16 +77,19 @@ node --env-file=.env.local scripts/import-tax-parcels.js
 This script:
 1. Uses `ogr2ogr` to stream the `TaxParcel` layer (filtered to `SINGLE FAMILY RES`)
 2. Builds a normalized address string to match against the `houses` table
-3. Extracts the **surname** and **first name** from `OWNER_NAME`:
-   - `"PATTERSON, MICHAEL A & LISBETH"` → surname `Patterson`, first name `Michael`
-   - `"GREAT HEIGHTS VENTURES LLC"` → surname `Great Heights Ventures LLC`, first name `null`
-4. Upserts into `households`: updates the surname/first name if a household exists, inserts a new one if not
-5. Stores first name in `head_of_household_name`
+3. Extracts the **surname**, **first name**, and **spouse name** from `OWNER_NAME`:
+   - `"PATTERSON, MICHAEL A & LISBETH"` → surname `Patterson`, first `Michael`, spouse `Lisbeth`
+   - `"MICHAELIS, BRETT AND NICOLE"` → surname `Michaelis`, first `Brett`, spouse `Nicole`
+   - `"PATTERSON, MICHAEL A"` → surname `Patterson`, first `Michael`, spouse `null`
+   - `"GREAT HEIGHTS VENTURES LLC"` → surname `Great Heights Ventures LLC`, first `null`, spouse `null`
+4. Upserts into `households`: updates all name fields if a household exists, inserts a new one if not
+5. Stores names in `head_of_household_name` and `spouse_name`
 
 **Name extraction rules:**
 - Everything before the first comma → surname (title-cased)
-- First word after the comma, stopping before a middle initial or `&` → first name (title-cased)
-- No comma → treated as a business/entity, no first name extracted
+- First word after the comma, before any middle initial or `&`/`AND` → first name (title-cased)
+- First word after `&` or `AND` → spouse name (title-cased)
+- No comma → treated as a business/entity, no names extracted
 
 Re-running the script is safe — it upserts, not inserts.
 
