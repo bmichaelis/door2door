@@ -2,7 +2,8 @@
   "name": "Salt Lake County",
   "agrcCountyId": 18,
   "addresses": {
-    "file": "data/salt-lake-addresses-county.geojson"
+    "file": "data/UT-source.geojson",
+    "districtFilter": "49035"
   },
   "taxParcels": {
     "gdb": "data/SaltLakeTaxParcels.gdb",

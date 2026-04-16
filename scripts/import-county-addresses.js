@@ -20,11 +20,14 @@ function parseArgs() {
     if (args[i] === '--file' && args[i + 1]) fileOverride = args[++i]
   }
   if (!countyConfig) { console.error('Usage: import-county-addresses.js --county <config-file> [--file <path>]'); process.exit(1) }
-  return { inputFile: fileOverride ?? countyConfig.addresses.file }
+  return {
+    inputFile: fileOverride ?? countyConfig.addresses.file,
+    districtFilter: countyConfig.addresses.districtFilter ?? null,
+  }
 }
 
 async function main() {
-  const { inputFile } = parseArgs()
+  const { inputFile, districtFilter } = parseArgs()
 
   if (!fs.existsSync(inputFile)) {
     console.error(`File not found: ${inputFile}`)
@@ -90,7 +93,7 @@ async function main() {
     batch = []
   }
 
-  console.log(`Importing addresses from ${inputFile}...`)
+  console.log(`Importing addresses from ${inputFile}${districtFilter ? ` (filtering to district ${districtFilter})` : ''}...`)
   for await (const line of rl) {
     const trimmed = line.trim()
     if (!trimmed) continue
@@ -101,6 +104,7 @@ async function main() {
 
     if (feature?.type !== 'Feature') continue
     const props = feature.properties ?? {}
+    if (districtFilter && props.district !== districtFilter) continue
     const coords = feature.geometry?.coordinates
     if (!Array.isArray(coords) || coords.length < 2) continue
     if (!props.number || !props.street) continue

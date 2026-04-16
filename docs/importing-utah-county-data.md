@@ -48,9 +48,12 @@ City codes in AGRC's `precinctid` field are mapped to human-readable city names 
 
 ## Step 2 — Houses (OpenAddresses)
 
-**Source:** [openaddresses.io](https://openaddresses.io) — free pre-geocoded address data. Download the county collection.
+**Source:** [openaddresses.io](https://openaddresses.io) — free pre-geocoded address data.
 
-Expected file path is set in the county config's `addresses.file` field. Override with `--file` if needed.
+- **Utah County:** download the Utah County collection directly → `data/utah-addresses-county.geojson`
+- **Salt Lake County:** a county-specific file is not available. Download the full Utah state file (`UT-source.geojson`) → `data/UT-source.geojson`. The county config's `districtFilter` (`49035`) automatically skips all non-SL-County records during import.
+
+File path and optional district filter are set in the county config's `addresses` section. Override the file with `--file` if needed.
 
 ```bash
 node --env-file=.env.local scripts/import-county-addresses.js --county config/utah-county.json
@@ -59,13 +62,15 @@ node --env-file=.env.local scripts/import-county-addresses.js --county config/sa
 
 This script:
 1. Streams the file line-by-line to avoid loading it all into memory
-2. Batches 500 records at a time
-3. Performs a spatial join per batch to assign `neighborhood_id`
-4. Uses `ON CONFLICT (external_id) DO NOTHING` — safe to re-run
+2. Skips records whose `district` field doesn't match `districtFilter` (if set)
+3. Batches 500 records at a time
+4. Performs a spatial join per batch to assign `neighborhood_id`
+5. Uses `ON CONFLICT (external_id) DO NOTHING` — safe to re-run
 
-**Expected output (Utah County full run):**
+**Expected output:**
 ```
-~243,000 lines → ~94,000 imported, ~149,000 skipped (already existed)
+Utah County:     ~243,000 lines → ~94,000 imported
+Salt Lake County: 1,483,002 lines → ~536,000 processed, ~94,000+ imported (rest filtered or skipped)
 ```
 
 > **Note:** The `/admin/import` UI upload also works for smaller files but times out on Cloudflare Workers for county-scale files (>~10 MB). Always use this script for full-county imports.
@@ -113,7 +118,7 @@ Re-running the script is safe — it upserts, not inserts.
 1. Copy an existing config and update `agrcCountyId`, city codes, and file paths
 2. To discover the AGRC county ID, check the alphabetical position among Utah's 29 counties (e.g., Salt Lake = 18, Utah = 25)
 3. To discover city codes, run: `node -e "const {Pool}=require('pg'); const p=new Pool({host:'opensgid.ugrc.utah.gov',port:5432,database:'opensgid',user:'agrc',password:'agrc',ssl:false}); p.query('SELECT DISTINCT precinctid FROM political.vista_ballot_areas WHERE countyid=$1 ORDER BY precinctid',[<ID>]).then(r=>{const codes=[...new Set(r.rows.map(x=>x.precinctid.replace(/[0-9]+$/,'')))]; console.log(codes.join('\n')); p.end()})"`
-4. Download OpenAddresses data and the county tax GDB
+4. Download OpenAddresses data (county-specific if available, otherwise `UT-source.geojson` with a `districtFilter` set to the county's FIPS code) and the county tax GDB
 5. Run steps 1–3 with the new config
 
 ---
