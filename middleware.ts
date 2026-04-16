@@ -12,6 +12,9 @@ export default auth((req) => {
   if (isLoggedIn && !hasRole && !pathname.startsWith('/waiting') && !pathname.startsWith('/api/auth')) {
     return NextResponse.redirect(new URL('/waiting', req.url))
   }
+  if (isLoggedIn && hasRole && pathname === '/') {
+    return NextResponse.redirect(new URL('/map', req.url))
+  }
   return NextResponse.next()
 })
 

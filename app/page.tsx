@@ -7,4 +7,5 @@ export default async function RootPage() {
   if (!session?.user) redirect('/login')
   if (!session.user.role) redirect('/waiting')
   redirect('/map')
+  return null
 }
