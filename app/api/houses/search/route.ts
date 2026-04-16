@@ -41,7 +41,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   // defeating the trigram index on surname entirely.
   const rows = await db.execute(sql`
     (
-      SELECT ${HOUSE_COLS()}, NULL::text AS surname
+      SELECT ${HOUSE_COLS()}, NULL::text AS surname, NULL::text AS "headOfHouseholdName"
       FROM houses h
       WHERE (h.number || ' ' || h.street) ILIKE ${pattern}
       ORDER BY h.street, h.number
@@ -49,7 +49,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     )
     UNION
     (
-      SELECT ${HOUSE_COLS()}, ho.surname
+      SELECT ${HOUSE_COLS()}, ho.surname, ho.head_of_household_name AS "headOfHouseholdName"
       FROM households ho
       JOIN houses h ON h.id = ho.house_id
       WHERE ho.surname ILIKE ${pattern} AND ho.active = true
