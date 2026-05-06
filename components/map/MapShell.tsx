@@ -52,19 +52,12 @@ export function MapShell({ userRole }: Props) {
       .finally(() => setLocationReady(true))
   }, [])
 
-  // On mount: load neighborhoods (with house counts) + businesses only — houses load lazily by viewport
+  // On mount: load neighborhoods (with house counts) only — houses + businesses load lazily by viewport
   useEffect(() => {
     fetch('/api/neighborhoods')
       .then(r => r.json())
-      .then(async (nbhds: NeighborhoodWithCount[]) => {
+      .then((nbhds: NeighborhoodWithCount[]) => {
         setNeighborhoods(nbhds)
-        if (!nbhds.length) { setDataLoading(false); return }
-        const bizArrays = await Promise.all(
-          nbhds.map((n: Neighborhood) =>
-            fetch(`/api/businesses?neighborhoodId=${n.id}`).then(r => r.json())
-          )
-        )
-        setBusinesses(bizArrays.flat())
         setDataLoading(false)
       })
       .catch(() => setDataLoading(false))
@@ -75,6 +68,14 @@ export function MapShell({ userRole }: Props) {
     fetch(`/api/houses?bbox=${west},${south},${east},${north}`)
       .then(r => r.json())
       .then((rows: HouseWithOutcome[]) => setHouses(rows))
+      .catch(() => {})
+  }
+
+  function fetchBusinessesForBounds(bounds: ViewportBounds) {
+    const { west, south, east, north } = bounds
+    fetch(`/api/businesses?bbox=${west},${south},${east},${north}`)
+      .then(r => r.json())
+      .then((rows: BusinessRow[]) => setBusinesses(rows))
       .catch(() => {})
   }
 
@@ -92,14 +93,18 @@ export function MapShell({ userRole }: Props) {
       }).catch(() => {})
     }, 5000)
 
-    // Load houses when zoomed in, clear when zoomed out (debounced 300ms)
+    // Load houses + businesses when zoomed in, clear when zoomed out (debounced 300ms)
     clearTimeout(bboxFetchTimeout.current)
     if (zoom >= HOUSE_ZOOM_THRESHOLD) {
       bboxFetchTimeout.current = setTimeout(() => {
-        if (currentBoundsRef.current) fetchHousesForBounds(currentBoundsRef.current)
+        if (currentBoundsRef.current) {
+          fetchHousesForBounds(currentBoundsRef.current)
+          fetchBusinessesForBounds(currentBoundsRef.current)
+        }
       }, 300)
     } else {
       setHouses([])
+      setBusinesses([])
     }
   }, [])
 

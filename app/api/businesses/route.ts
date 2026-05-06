@@ -22,6 +22,21 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const { role, teamId } = session!.user!
   const { searchParams } = new URL(req.url)
   const neighborhoodId = searchParams.get('neighborhoodId')
+  const bbox = searchParams.get('bbox')
+
+  // Viewport bbox fetch — returns all businesses in bounds regardless of neighborhood/team
+  if (bbox) {
+    const parts = bbox.split(',').map(Number)
+    if (parts.length !== 4 || parts.some(isNaN)) {
+      return NextResponse.json({ error: 'bbox must be minLng,minLat,maxLng,maxLat' }, { status: 400 })
+    }
+    const [minLng, minLat, maxLng, maxLat] = parts
+    const rows = await db.execute(
+      sql`SELECT ${BUSINESS_COLS} FROM businesses
+          WHERE ST_Within(businesses.location, ST_MakeEnvelope(${minLng}, ${minLat}, ${maxLng}, ${maxLat}, 4326))`
+    )
+    return NextResponse.json(rows.rows)
+  }
 
   if (role === 'admin') {
     const query = neighborhoodId
