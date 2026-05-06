@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Door to Door',
   description: 'Field sales platform for door-to-door teams',
+  icons: { icon: '/icon.svg' },
 }
 
 export default function RootLayout({

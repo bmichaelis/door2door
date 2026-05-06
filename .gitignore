@@ -50,4 +50,8 @@ next-env.d.ts
 
 # downloaded data files
 *.geojson
+*.geojson.gz
 *.geojson.state
+data/*.gdb/
+data/*.pdf
+data/parcels/
