@@ -13,9 +13,9 @@ describe('MapStyleToggle', () => {
 
   it('marks the active style button as active', () => {
     render(<MapStyleToggle value="satellite" onChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Satellite' })).toHaveClass('bg-blue-600')
-    expect(screen.getByRole('button', { name: 'Map' })).not.toHaveClass('bg-blue-600')
-    expect(screen.getByRole('button', { name: 'Hybrid' })).not.toHaveClass('bg-blue-600')
+    expect(screen.getByRole('button', { name: 'Satellite' })).toHaveClass('bg-primary')
+    expect(screen.getByRole('button', { name: 'Map' })).not.toHaveClass('bg-primary')
+    expect(screen.getByRole('button', { name: 'Hybrid' })).not.toHaveClass('bg-primary')
   })
 
   it('calls onChange with the correct style key when a button is clicked', async () => {
