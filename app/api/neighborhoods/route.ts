@@ -9,9 +9,11 @@ import { sql } from 'drizzle-orm'
 export const GET = withErrorHandling(async () => {
   const session = await auth()
   requireRole(session?.user?.role, 'admin', 'manager', 'rep')
+  // Simplify boundaries server-side: 0.0001° ≈ 10m, invisible at typical map zooms
+  // and shrinks the payload ~6× (1428 polygons go from ~6 MB to ~1 MB).
   const rows = await db.execute(
     sql`SELECT n.id, n.name, n.team_id, n.created_at,
-        ST_AsGeoJSON(n.boundary)::json as boundary,
+        ST_AsGeoJSON(ST_SimplifyPreserveTopology(n.boundary, 0.0001))::json as boundary,
         COUNT(h.id)::int as "houseCount"
         FROM neighborhoods n
         LEFT JOIN houses h ON h.neighborhood_id = n.id
