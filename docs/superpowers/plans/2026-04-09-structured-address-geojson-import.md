@@ -41,7 +41,7 @@
 - Modify: `lib/db/schema.test.ts`
 - Create: `lib/db/migrations/0002_houses_structured_fields.sql`
 
-- [ ] **Step 1: Update `lib/db/schema.ts`**
+- [x] **Step 1: Update `lib/db/schema.ts`**
 
 Replace the file with:
 
@@ -183,7 +183,7 @@ export type Visit = typeof visits.$inferSelect
 export type HouseRow = Omit<House, 'location'> & { lat: number; lng: number }
 ```
 
-- [ ] **Step 2: Update `lib/db/schema.test.ts`**
+- [x] **Step 2: Update `lib/db/schema.test.ts`**
 
 ```typescript
 import { describe, it, expect } from 'vitest'
@@ -221,7 +221,7 @@ describe('schema', () => {
 })
 ```
 
-- [ ] **Step 3: Run schema tests to verify they pass**
+- [x] **Step 3: Run schema tests to verify they pass**
 
 ```bash
 npm run test:run -- lib/db/schema.test.ts
@@ -229,7 +229,7 @@ npm run test:run -- lib/db/schema.test.ts
 
 Expected: all 4 tests PASS.
 
-- [ ] **Step 4: Create `lib/db/migrations/0002_houses_structured_fields.sql`**
+- [x] **Step 4: Create `lib/db/migrations/0002_houses_structured_fields.sql`**
 
 ```sql
 -- Clear existing house data (no legacy data — safe to truncate)
@@ -260,7 +260,7 @@ ALTER TABLE "houses" ADD COLUMN "location" geometry(Point, 4326) NOT NULL;
 ALTER TABLE "houses" ADD CONSTRAINT "houses_external_id_unique" UNIQUE("external_id");
 ```
 
-- [ ] **Step 5: Apply the migration**
+- [x] **Step 5: Apply the migration**
 
 ```bash
 npx drizzle-kit migrate
@@ -276,7 +276,7 @@ npx drizzle-kit push
 
 This pushes the schema diff directly without the migration file. After pushing, verify the table structure in Neon console or by running `\d houses` via psql.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add lib/db/schema.ts lib/db/schema.test.ts lib/db/migrations/0002_houses_structured_fields.sql
@@ -291,7 +291,7 @@ git commit -m "feat: replace address/lat/lng with structured fields and PostGIS 
 - Create: `lib/houses.ts`
 - Create: `lib/houses.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `lib/houses.test.ts`:
 
@@ -338,7 +338,7 @@ describe('formatAddress', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 npm run test:run -- lib/houses.test.ts
@@ -346,7 +346,7 @@ npm run test:run -- lib/houses.test.ts
 
 Expected: FAIL — `Cannot find module './houses'`
 
-- [ ] **Step 3: Create `lib/houses.ts`**
+- [x] **Step 3: Create `lib/houses.ts`**
 
 ```typescript
 export function formatAddress(house: {
@@ -364,7 +364,7 @@ export function formatAddress(house: {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 npm run test:run -- lib/houses.test.ts
@@ -372,7 +372,7 @@ npm run test:run -- lib/houses.test.ts
 
 Expected: all 3 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/houses.ts lib/houses.test.ts
@@ -387,7 +387,7 @@ git commit -m "feat: add formatAddress helper"
 - Modify: `lib/mapbox.ts`
 - Create: `lib/mapbox.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `lib/mapbox.test.ts`:
 
@@ -484,7 +484,7 @@ describe('reverseGeocode', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npm run test:run -- lib/mapbox.test.ts
@@ -492,7 +492,7 @@ npm run test:run -- lib/mapbox.test.ts
 
 Expected: FAIL — `reverseGeocode is not exported` and geocodeAddress returns wrong shape.
 
-- [ ] **Step 3: Update `lib/mapbox.ts`**
+- [x] **Step 3: Update `lib/mapbox.ts`**
 
 ```typescript
 export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
@@ -548,7 +548,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeocodeR
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 npm run test:run -- lib/mapbox.test.ts
@@ -556,7 +556,7 @@ npm run test:run -- lib/mapbox.test.ts
 
 Expected: all 5 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/mapbox.ts lib/mapbox.test.ts
@@ -570,7 +570,7 @@ git commit -m "feat: update geocodeAddress to return structured fields, add reve
 **Files:**
 - Create: `app/api/houses/import/geojson/route.ts`
 
-- [ ] **Step 1: Create `app/api/houses/import/geojson/route.ts`**
+- [x] **Step 1: Create `app/api/houses/import/geojson/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -680,7 +680,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 2: Run the full test suite to verify nothing broke**
+- [x] **Step 2: Run the full test suite to verify nothing broke**
 
 ```bash
 npm run test:run
@@ -688,7 +688,7 @@ npm run test:run
 
 Expected: all tests pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/api/houses/import/geojson/route.ts
@@ -702,7 +702,7 @@ git commit -m "feat: add GeoJSON bulk import route for OpenAddresses data"
 **Files:**
 - Modify: `app/api/houses/import/route.ts`
 
-- [ ] **Step 1: Update `app/api/houses/import/route.ts`**
+- [x] **Step 1: Update `app/api/houses/import/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -765,7 +765,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 2: Run the full test suite**
+- [x] **Step 2: Run the full test suite**
 
 ```bash
 npm run test:run
@@ -773,7 +773,7 @@ npm run test:run
 
 Expected: all tests pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/api/houses/import/route.ts
@@ -788,7 +788,7 @@ git commit -m "feat: update CSV import to use structured geocode result"
 - Modify: `app/api/houses/route.ts`
 - Modify: `app/api/houses/[id]/route.ts`
 
-- [ ] **Step 1: Update `app/api/houses/route.ts`**
+- [x] **Step 1: Update `app/api/houses/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -877,7 +877,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 2: Update `app/api/houses/[id]/route.ts`**
+- [x] **Step 2: Update `app/api/houses/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -910,7 +910,7 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
 })
 ```
 
-- [ ] **Step 3: Run the full test suite**
+- [x] **Step 3: Run the full test suite**
 
 ```bash
 npm run test:run
@@ -918,7 +918,7 @@ npm run test:run
 
 Expected: all tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/api/houses/route.ts app/api/houses/[id]/route.ts
@@ -936,7 +936,7 @@ git commit -m "feat: update houses API routes for structured address fields"
 - Modify: `components/map/HousePins.tsx`
 - Modify: `components/map/MapView.tsx`
 
-- [ ] **Step 1: Update `components/forms/HouseForm.tsx`**
+- [x] **Step 1: Update `components/forms/HouseForm.tsx`**
 
 ```tsx
 'use client'
@@ -1045,7 +1045,7 @@ export function HouseForm({ lat, lng, onSubmit, onCancel }: Props) {
 }
 ```
 
-- [ ] **Step 2: Update `components/map/MapShell.tsx`**
+- [x] **Step 2: Update `components/map/MapShell.tsx`**
 
 ```tsx
 'use client'
@@ -1128,7 +1128,7 @@ export function MapShell({ neighborhoods, houses, userRole }: Props) {
 }
 ```
 
-- [ ] **Step 3: Update `components/map/HousePanel.tsx`**
+- [x] **Step 3: Update `components/map/HousePanel.tsx`**
 
 Replace the entire file with:
 
@@ -1366,7 +1366,7 @@ export function HousePanel({ house, userRole, onClose }: Props) {
 }
 ```
 
-- [ ] **Step 4: Update `components/map/HousePins.tsx`**
+- [x] **Step 4: Update `components/map/HousePins.tsx`**
 
 Change the import from `House` to `HouseRow`:
 
@@ -1424,7 +1424,7 @@ export function HousePins({ houses, onHouseClick }: Props) {
 }
 ```
 
-- [ ] **Step 5: Update `components/map/MapView.tsx`**
+- [x] **Step 5: Update `components/map/MapView.tsx`**
 
 Change the import and prop type from `House` to `HouseRow`:
 
@@ -1487,7 +1487,7 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
 }
 ```
 
-- [ ] **Step 6: Run the full test suite**
+- [x] **Step 6: Run the full test suite**
 
 ```bash
 npm run test:run
@@ -1495,7 +1495,7 @@ npm run test:run
 
 Expected: all tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add components/forms/HouseForm.tsx components/map/MapShell.tsx components/map/HousePanel.tsx components/map/HousePins.tsx components/map/MapView.tsx

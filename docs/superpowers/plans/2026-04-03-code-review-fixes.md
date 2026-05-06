@@ -50,7 +50,7 @@
 - Create: `lib/api.ts`
 - Modify: `lib/permissions.ts`
 
-- [ ] **Step 1: Update `lib/permissions.ts`**
+- [x] **Step 1: Update `lib/permissions.ts`**
 
 Add `ForbiddenError`, remove the `assertRole` alias (it duplicated `requireRole`). All routes already import `assertRole` — they will be updated in Task 2 onwards to use `requireRole` via `withErrorHandling`.
 
@@ -85,7 +85,7 @@ export function isAdmin(role: Role | null | undefined): boolean {
 }
 ```
 
-- [ ] **Step 2: Create `lib/api.ts`**
+- [x] **Step 2: Create `lib/api.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -109,7 +109,7 @@ export function withErrorHandling(handler: Handler): Handler {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add lib/permissions.ts lib/api.ts
@@ -125,7 +125,7 @@ git commit -m "fix: add ForbiddenError and withErrorHandling wrapper"
 
 Switch from `export async function X` to `export const X = withErrorHandling(async ...)`. Replace `assertRole` with `requireRole`.
 
-- [ ] **Step 1: Update `app/api/teams/route.ts`**
+- [x] **Step 1: Update `app/api/teams/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -155,7 +155,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 2: Update `app/api/teams/[id]/route.ts`**
+- [x] **Step 2: Update `app/api/teams/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -188,7 +188,7 @@ export const DELETE = withErrorHandling(async (_req: NextRequest, { params }) =>
 })
 ```
 
-- [ ] **Step 3: Update `app/api/users/route.ts`**
+- [x] **Step 3: Update `app/api/users/route.ts`**
 
 ```typescript
 import { NextResponse } from 'next/server'
@@ -214,7 +214,7 @@ export const GET = withErrorHandling(async () => {
 })
 ```
 
-- [ ] **Step 4: Update `app/api/products/route.ts`**
+- [x] **Step 4: Update `app/api/products/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -244,7 +244,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 5: Update `app/api/products/[id]/route.ts`**
+- [x] **Step 5: Update `app/api/products/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -277,7 +277,7 @@ export const DELETE = withErrorHandling(async (_req: NextRequest, { params }) =>
 })
 ```
 
-- [ ] **Step 6: Update `app/api/neighborhoods/route.ts`**
+- [x] **Step 6: Update `app/api/neighborhoods/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -316,7 +316,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 7: Update `app/api/houses/[id]/route.ts`**
+- [x] **Step 7: Update `app/api/houses/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -350,7 +350,7 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
 })
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add app/api/teams/ app/api/users/route.ts app/api/products/ app/api/neighborhoods/route.ts app/api/houses/[id]/
@@ -366,7 +366,7 @@ git commit -m "fix: wrap all route handlers with error handling, return 403 on a
 
 Replace the `sql.raw(updates.join(', '))` string interpolation with Drizzle's typed `update().set()` for scalar fields and a parameterized sql template for the geometry update.
 
-- [ ] **Step 1: Rewrite `app/api/neighborhoods/[id]/route.ts`**
+- [x] **Step 1: Rewrite `app/api/neighborhoods/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -420,7 +420,7 @@ export const DELETE = withErrorHandling(async (_req: NextRequest, { params }) =>
 })
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add app/api/neighborhoods/[id]/route.ts
@@ -437,7 +437,7 @@ git commit -m "fix: eliminate SQL injection in neighborhoods PATCH by using para
 
 The dashboard currently does `fetch('/api/stats')` which is a loopback HTTP call that fails on Cloudflare Pages (no local HTTP server). Extract the queries into `lib/stats.ts` and call them directly from both the dashboard Server Component and the API route.
 
-- [ ] **Step 1: Create `lib/stats.ts`**
+- [x] **Step 1: Create `lib/stats.ts`**
 
 ```typescript
 import { db } from '@/lib/db'
@@ -519,7 +519,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 }
 ```
 
-- [ ] **Step 2: Rewrite `app/api/stats/route.ts`**
+- [x] **Step 2: Rewrite `app/api/stats/route.ts`**
 
 ```typescript
 import { NextResponse } from 'next/server'
@@ -539,7 +539,7 @@ export const GET = withErrorHandling(async () => {
 })
 ```
 
-- [ ] **Step 3: Rewrite `app/(app)/dashboard/page.tsx`**
+- [x] **Step 3: Rewrite `app/(app)/dashboard/page.tsx`**
 
 ```typescript
 import { auth } from '@/lib/auth'
@@ -568,7 +568,7 @@ export default async function DashboardPage() {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add lib/stats.ts app/api/stats/route.ts app/\(app\)/dashboard/page.tsx
@@ -622,7 +622,7 @@ git commit -m "fix: rename accounts columns to camelCase to match @auth/drizzle-
 
 `GET /api/houses` currently returns all houses regardless of role. Reps and managers should only see houses in their team's neighborhoods. Also add required-field validation to POSTs that currently produce raw Postgres errors on missing fields.
 
-- [ ] **Step 1: Rewrite `app/api/houses/route.ts`**
+- [x] **Step 1: Rewrite `app/api/houses/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -691,7 +691,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 2: Rewrite `app/api/visits/route.ts`**
+- [x] **Step 2: Rewrite `app/api/visits/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -742,7 +742,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 3: Rewrite `app/api/households/route.ts`**
+- [x] **Step 3: Rewrite `app/api/households/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -785,7 +785,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 4: Rewrite `app/api/users/[id]/route.ts`**
+- [x] **Step 4: Rewrite `app/api/users/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -817,7 +817,7 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
 })
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/api/houses/route.ts app/api/visits/route.ts app/api/households/route.ts app/api/users/[id]/route.ts
@@ -833,7 +833,7 @@ git commit -m "fix: scope houses by team for reps/managers, add input validation
 
 Currently all `fetch()` calls discard the response status. A failed visit POST silently returns to the detail view — the rep thinks the visit was logged but it was not. Add an `error` state, check `res.ok` in all fetch calls, and display the error. Also fix the `useEffect` missing dependency.
 
-- [ ] **Step 1: Rewrite `components/map/HousePanel.tsx`**
+- [x] **Step 1: Rewrite `components/map/HousePanel.tsx`**
 
 ```tsx
 'use client'
@@ -1068,7 +1068,7 @@ export function HousePanel({ house, userRole, onClose }: Props) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add components/map/HousePanel.tsx
@@ -1084,7 +1084,7 @@ git commit -m "fix: add error handling to HousePanel, surface fetch failures to 
 
 `HousePins` renders pins but clicking them does nothing because there's no click listener on the Mapbox layer. Fix by adding `interactiveLayerIds={['house-circles']}` to the `Map` component and handling layer clicks in the existing `onClick` handler.
 
-- [ ] **Step 1: Update `components/map/MapView.tsx`**
+- [x] **Step 1: Update `components/map/MapView.tsx`**
 
 ```tsx
 'use client'
@@ -1137,7 +1137,7 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add components/map/MapView.tsx
@@ -1154,7 +1154,7 @@ git commit -m "fix: wire house pin click events via interactiveLayerIds"
 
 When a rep taps empty map space, `onMapClick` fires with coordinates. `MapShell` should capture these, show a form asking for an address, then POST to `/api/houses`. On success, call `router.refresh()` to re-fetch houses from the server.
 
-- [ ] **Step 1: Create `components/forms/HouseForm.tsx`**
+- [x] **Step 1: Create `components/forms/HouseForm.tsx`**
 
 ```tsx
 'use client'
@@ -1207,7 +1207,7 @@ export function HouseForm({ lat, lng, onSubmit, onCancel }: Props) {
 }
 ```
 
-- [ ] **Step 2: Rewrite `components/map/MapShell.tsx`**
+- [x] **Step 2: Rewrite `components/map/MapShell.tsx`**
 
 ```tsx
 'use client'
@@ -1290,7 +1290,7 @@ export function MapShell({ neighborhoods, houses, userRole }: Props) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add components/forms/HouseForm.tsx components/map/MapShell.tsx
@@ -1306,7 +1306,7 @@ git commit -m "feat: add tap-to-add-house flow from map"
 
 Only `draw.create` is handled. If the user draws a polygon then edits its vertices, `onDrawComplete` fires with the pre-edit version. Add a `draw.update` listener mirroring the `draw.create` handler.
 
-- [ ] **Step 1: Update `components/map/DrawControl.tsx`**
+- [x] **Step 1: Update `components/map/DrawControl.tsx`**
 
 ```tsx
 'use client'
@@ -1354,7 +1354,7 @@ export function DrawControl({ onDrawComplete }: Props) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add components/map/DrawControl.tsx
@@ -1370,7 +1370,7 @@ git commit -m "fix: handle draw.update so polygon edits are captured"
 
 `Promise.allSettled` fires all geocode requests in parallel. A 500-row CSV fires 500 simultaneous Mapbox API requests, hitting rate limits. Process in batches of 10.
 
-- [ ] **Step 1: Update `app/api/houses/import/route.ts`**
+- [x] **Step 1: Update `app/api/houses/import/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -1427,7 +1427,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 })
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add app/api/houses/import/route.ts
@@ -1441,7 +1441,7 @@ git commit -m "fix: batch CSV geocoding requests to avoid Mapbox rate limits"
 **Files:**
 - Modify: `app/layout.tsx`, `components/forms/VisitForm.tsx`
 
-- [ ] **Step 1: Fix app metadata in `app/layout.tsx`**
+- [x] **Step 1: Fix app metadata in `app/layout.tsx`**
 
 Replace lines 15–18:
 
@@ -1452,7 +1452,7 @@ export const metadata: Metadata = {
 }
 ```
 
-- [ ] **Step 2: Add `serviceDate` field to `components/forms/VisitForm.tsx`**
+- [x] **Step 2: Add `serviceDate` field to `components/forms/VisitForm.tsx`**
 
 Add a `serviceDate` state variable (after `installDate`) and a corresponding input in the JSX. Also pass `serviceDate` in `onSubmit`.
 
@@ -1492,7 +1492,7 @@ Replace the install date input block (lines 106–109):
               </div>
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/layout.tsx components/forms/VisitForm.tsx

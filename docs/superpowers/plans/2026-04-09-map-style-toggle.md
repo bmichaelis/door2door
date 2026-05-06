@@ -28,7 +28,7 @@ There is no `vitest.config.ts` in the project. Vitest defaults to the `node` env
 **Files:**
 - Create: `vitest.config.ts`
 
-- [ ] **Step 1: Create `vitest.config.ts`**
+- [x] **Step 1: Create `vitest.config.ts`**
 
 ```typescript
 import { defineConfig } from 'vitest/config'
@@ -48,7 +48,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 2: Verify existing tests still pass**
+- [x] **Step 2: Verify existing tests still pass**
 
 ```bash
 npm run test:run
@@ -56,7 +56,7 @@ npm run test:run
 
 Expected: all existing tests pass (permissions, auth, schema).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add vitest.config.ts
@@ -71,7 +71,7 @@ git commit -m "chore: add vitest config with jsdom environment for React compone
 - Create: `components/map/MapStyleToggle.test.tsx`
 - Create: `components/map/MapStyleToggle.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `components/map/MapStyleToggle.test.tsx`:
 
@@ -113,7 +113,7 @@ describe('MapStyleToggle', () => {
 })
 ```
 
-- [ ] **Step 2: Install @testing-library/user-event if missing**
+- [x] **Step 2: Install @testing-library/user-event if missing**
 
 ```bash
 npm ls @testing-library/user-event
@@ -125,7 +125,7 @@ If not listed, install it:
 npm install --save-dev @testing-library/user-event
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 ```bash
 npm run test:run -- components/map/MapStyleToggle.test.tsx
@@ -133,7 +133,7 @@ npm run test:run -- components/map/MapStyleToggle.test.tsx
 
 Expected: FAIL — `Cannot find module './MapStyleToggle'`
 
-- [ ] **Step 4: Create `components/map/MapStyleToggle.tsx`**
+- [x] **Step 4: Create `components/map/MapStyleToggle.tsx`**
 
 ```tsx
 'use client'
@@ -188,7 +188,7 @@ npm run test:run -- components/map/MapStyleToggle.test.tsx
 
 Expected: all 4 tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add components/map/MapStyleToggle.tsx components/map/MapStyleToggle.test.tsx
@@ -202,7 +202,7 @@ git commit -m "feat: add MapStyleToggle component with Map/Satellite/Hybrid opti
 **Files:**
 - Modify: `components/map/MapView.tsx`
 
-- [ ] **Step 1: Update `components/map/MapView.tsx`**
+- [x] **Step 1: Update `components/map/MapView.tsx`**
 
 Replace the entire file with:
 
@@ -265,7 +265,7 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
 }
 ```
 
-- [ ] **Step 2: Run all tests to verify nothing regressed**
+- [x] **Step 2: Run all tests to verify nothing regressed**
 
 ```bash
 npm run test:run
@@ -273,7 +273,7 @@ npm run test:run
 
 Expected: all tests pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add components/map/MapView.tsx

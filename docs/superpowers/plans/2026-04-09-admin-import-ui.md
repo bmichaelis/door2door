@@ -46,7 +46,7 @@ Both routes accept `multipart/form-data` with a `file` field.
 
 ---
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `app/(app)/admin/import/client.test.tsx`:
 
@@ -176,7 +176,7 @@ describe('ImportClient', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npm run test:run -- app/\(app\)/admin/import/client.test.tsx
@@ -184,7 +184,7 @@ npm run test:run -- app/\(app\)/admin/import/client.test.tsx
 
 Expected: FAIL — `Cannot find module './client'`
 
-- [ ] **Step 3: Create `app/(app)/admin/import/client.tsx`**
+- [x] **Step 3: Create `app/(app)/admin/import/client.tsx`**
 
 ```tsx
 'use client'
@@ -315,7 +315,7 @@ export function ImportClient() {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 npm run test:run -- app/\(app\)/admin/import/client.test.tsx
@@ -325,7 +325,7 @@ Expected: all 8 tests PASS.
 
 **If some tests fail due to `@base-ui/react/input` not rendering a native input in jsdom:** The `Input` component wraps `@base-ui/react/input`. If `getByLabelText(/file/i)` fails because the label association doesn't resolve, fall back to `getByRole('textbox')` or use `container.querySelector('input[type="file"]')`. Adjust the test helper only — do not change the component.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/\(app\)/admin/import/client.tsx app/\(app\)/admin/import/client.test.tsx
@@ -340,7 +340,7 @@ git commit -m "feat: add ImportClient component for house bulk import"
 - Create: `app/(app)/admin/import/page.tsx`
 - Modify: `app/(app)/layout.tsx`
 
-- [ ] **Step 1: Create `app/(app)/admin/import/page.tsx`**
+- [x] **Step 1: Create `app/(app)/admin/import/page.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -354,7 +354,7 @@ export default async function ImportPage() {
 }
 ```
 
-- [ ] **Step 2: Add Import nav link to `app/(app)/layout.tsx`**
+- [x] **Step 2: Add Import nav link to `app/(app)/layout.tsx`**
 
 Current nav (lines 15–21):
 ```tsx
@@ -381,7 +381,7 @@ Replace with:
 </nav>
 ```
 
-- [ ] **Step 3: Run the full test suite**
+- [x] **Step 3: Run the full test suite**
 
 ```bash
 npm run test:run
@@ -389,7 +389,7 @@ npm run test:run
 
 Expected: all tests pass (no regressions).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/\(app\)/admin/import/page.tsx app/\(app\)/layout.tsx

@@ -83,13 +83,13 @@ wrangler.toml
 **Files:**
 - Create: `package.json` (via CLI), `next.config.ts`, `wrangler.toml`, `vitest.config.ts`, `vitest.setup.ts`, `.env.local`
 
-- [ ] **Step 1: Scaffold Next.js app**
+- [x] **Step 1: Scaffold Next.js app**
 
 ```bash
 npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias="@/*"
 ```
 
-- [ ] **Step 2: Install dependencies**
+- [x] **Step 2: Install dependencies**
 
 ```bash
 npm install next-auth@beta @auth/drizzle-adapter drizzle-orm @neondatabase/serverless
@@ -99,14 +99,14 @@ npm install --save-dev vitest @vitejs/plugin-react @testing-library/react @testi
 npm install --save-dev @types/mapbox-gl
 ```
 
-- [ ] **Step 3: Install shadcn/ui**
+- [x] **Step 3: Install shadcn/ui**
 
 ```bash
 npx shadcn@latest init -d
 npx shadcn@latest add button input label card select textarea badge dialog sheet
 ```
 
-- [ ] **Step 4: Create `vitest.config.ts`**
+- [x] **Step 4: Create `vitest.config.ts`**
 
 ```typescript
 import { defineConfig } from 'vitest/config'
@@ -126,13 +126,13 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 5: Create `vitest.setup.ts`**
+- [x] **Step 5: Create `vitest.setup.ts`**
 
 ```typescript
 import '@testing-library/jest-dom'
 ```
 
-- [ ] **Step 6: Create `wrangler.toml`**
+- [x] **Step 6: Create `wrangler.toml`**
 
 ```toml
 name = "door2door"
@@ -142,7 +142,7 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 ```
 
-- [ ] **Step 7: Update `next.config.ts`**
+- [x] **Step 7: Update `next.config.ts`**
 
 ```typescript
 import type { NextConfig } from 'next'
@@ -154,7 +154,7 @@ const nextConfig: NextConfig = {
 export default nextConfig
 ```
 
-- [ ] **Step 8: Create `.env.local`**
+- [x] **Step 8: Create `.env.local`**
 
 ```bash
 DATABASE_URL=postgresql://...   # from Neon dashboard
@@ -164,7 +164,7 @@ AUTH_GOOGLE_SECRET=
 NEXT_PUBLIC_MAPBOX_TOKEN=
 ```
 
-- [ ] **Step 9: Add test script to `package.json`**
+- [x] **Step 9: Add test script to `package.json`**
 
 ```json
 "scripts": {
@@ -173,14 +173,14 @@ NEXT_PUBLIC_MAPBOX_TOKEN=
 }
 ```
 
-- [ ] **Step 10: Verify dev server starts**
+- [x] **Step 10: Verify dev server starts**
 
 ```bash
 npm run dev
 ```
 Expected: server starts at http://localhost:3000
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add -A
@@ -195,7 +195,7 @@ git commit -m "feat: scaffold Next.js project with Cloudflare, Drizzle, Auth.js,
 - Create: `lib/db/schema.ts`, `lib/db/index.ts`, `drizzle.config.ts`
 - Create: `lib/db/migrations/0000_init.sql` (generated)
 
-- [ ] **Step 1: Create `drizzle.config.ts`**
+- [x] **Step 1: Create `drizzle.config.ts`**
 
 ```typescript
 import type { Config } from 'drizzle-kit'
@@ -210,7 +210,7 @@ export default {
 } satisfies Config
 ```
 
-- [ ] **Step 2: Create `lib/db/index.ts`**
+- [x] **Step 2: Create `lib/db/index.ts`**
 
 ```typescript
 import { neon } from '@neondatabase/serverless'
@@ -221,7 +221,7 @@ const sql = neon(process.env.DATABASE_URL!)
 export const db = drizzle(sql, { schema })
 ```
 
-- [ ] **Step 3: Write failing schema test**
+- [x] **Step 3: Write failing schema test**
 
 Create `lib/db/schema.test.ts`:
 
@@ -251,14 +251,14 @@ describe('schema', () => {
 })
 ```
 
-- [ ] **Step 4: Run test to verify it fails**
+- [x] **Step 4: Run test to verify it fails**
 
 ```bash
 npm run test:run lib/db/schema.test.ts
 ```
 Expected: FAIL — cannot find module `./schema`
 
-- [ ] **Step 5: Create `lib/db/schema.ts`**
+- [x] **Step 5: Create `lib/db/schema.ts`**
 
 ```typescript
 import {
@@ -380,14 +380,14 @@ export type Household = typeof households.$inferSelect
 export type Visit = typeof visits.$inferSelect
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 ```bash
 npm run test:run lib/db/schema.test.ts
 ```
 Expected: PASS
 
-- [ ] **Step 7: Enable PostGIS and generate migration**
+- [x] **Step 7: Enable PostGIS and generate migration**
 
 In Neon SQL editor, run:
 ```sql
@@ -399,14 +399,14 @@ Then generate migration:
 npx drizzle-kit generate
 ```
 
-- [ ] **Step 8: Apply migration**
+- [x] **Step 8: Apply migration**
 
 ```bash
 npx drizzle-kit migrate
 ```
 Expected: migration applied successfully
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add lib/db/ drizzle.config.ts
@@ -422,7 +422,7 @@ git commit -m "feat: add database schema and initial migration"
 - Create: `app/(auth)/login/page.tsx`, `app/(auth)/waiting/page.tsx`
 - Create: `app/page.tsx`
 
-- [ ] **Step 1: Write failing auth test**
+- [x] **Step 1: Write failing auth test**
 
 Create `lib/auth.test.ts`:
 
@@ -440,14 +440,14 @@ describe('auth config', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 npm run test:run lib/auth.test.ts
 ```
 Expected: FAIL
 
-- [ ] **Step 3: Create `lib/auth.ts`**
+- [x] **Step 3: Create `lib/auth.ts`**
 
 ```typescript
 import NextAuth from 'next-auth'
@@ -481,21 +481,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 })
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 npm run test:run lib/auth.test.ts
 ```
 Expected: PASS
 
-- [ ] **Step 5: Create `app/api/auth/[...nextauth]/route.ts`**
+- [x] **Step 5: Create `app/api/auth/[...nextauth]/route.ts`**
 
 ```typescript
 import { handlers } from '@/lib/auth'
 export const { GET, POST } = handlers
 ```
 
-- [ ] **Step 6: Create `middleware.ts`**
+- [x] **Step 6: Create `middleware.ts`**
 
 ```typescript
 import { auth } from '@/lib/auth'
@@ -520,7 +520,7 @@ export const config = {
 }
 ```
 
-- [ ] **Step 7: Create `app/(auth)/login/page.tsx`**
+- [x] **Step 7: Create `app/(auth)/login/page.tsx`**
 
 ```tsx
 import { signIn } from '@/lib/auth'
@@ -540,7 +540,7 @@ export default function LoginPage() {
 }
 ```
 
-- [ ] **Step 8: Create `app/(auth)/waiting/page.tsx`**
+- [x] **Step 8: Create `app/(auth)/waiting/page.tsx`**
 
 ```tsx
 import { signOut } from '@/lib/auth'
@@ -563,7 +563,7 @@ export default function WaitingPage() {
 }
 ```
 
-- [ ] **Step 9: Create `app/page.tsx`** (role-based redirect)
+- [x] **Step 9: Create `app/page.tsx`** (role-based redirect)
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -577,7 +577,7 @@ export default async function RootPage() {
 }
 ```
 
-- [ ] **Step 10: Extend NextAuth session types**
+- [x] **Step 10: Extend NextAuth session types**
 
 Create `types/next-auth.d.ts`:
 
@@ -598,7 +598,7 @@ declare module 'next-auth' {
 }
 ```
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add lib/auth.ts middleware.ts app/ types/
@@ -612,7 +612,7 @@ git commit -m "feat: add Google OIDC auth with role-based routing"
 **Files:**
 - Create: `lib/permissions.ts`
 
-- [ ] **Step 1: Write failing permissions test**
+- [x] **Step 1: Write failing permissions test**
 
 Create `lib/permissions.test.ts`:
 
@@ -646,14 +646,14 @@ describe('permissions', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 npm run test:run lib/permissions.test.ts
 ```
 Expected: FAIL
 
-- [ ] **Step 3: Create `lib/permissions.ts`**
+- [x] **Step 3: Create `lib/permissions.ts`**
 
 ```typescript
 type Role = 'admin' | 'manager' | 'rep'
@@ -684,14 +684,14 @@ export function assertRole(userRole: Role | null | undefined, ...allowed: Role[]
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 npm run test:run lib/permissions.test.ts
 ```
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/permissions.ts lib/permissions.test.ts
@@ -705,7 +705,7 @@ git commit -m "feat: add role permission helpers"
 **Files:**
 - Create: `app/api/products/route.ts`, `app/api/products/[id]/route.ts`
 
-- [ ] **Step 1: Create `app/api/products/route.ts`**
+- [x] **Step 1: Create `app/api/products/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -734,7 +734,7 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Create `app/api/products/[id]/route.ts`**
+- [x] **Step 2: Create `app/api/products/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -766,7 +766,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/api/products/
@@ -780,7 +780,7 @@ git commit -m "feat: add products API (admin-only write, all-roles read)"
 **Files:**
 - Create: `app/api/teams/route.ts`, `app/api/teams/[id]/route.ts`
 
-- [ ] **Step 1: Create `app/api/teams/route.ts`**
+- [x] **Step 1: Create `app/api/teams/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -808,7 +808,7 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Create `app/api/teams/[id]/route.ts`**
+- [x] **Step 2: Create `app/api/teams/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -840,7 +840,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/api/teams/
@@ -854,7 +854,7 @@ git commit -m "feat: add teams API"
 **Files:**
 - Create: `app/api/users/route.ts`, `app/api/users/[id]/route.ts`
 
-- [ ] **Step 1: Create `app/api/users/route.ts`**
+- [x] **Step 1: Create `app/api/users/route.ts`**
 
 ```typescript
 import { NextResponse } from 'next/server'
@@ -879,7 +879,7 @@ export async function GET() {
 }
 ```
 
-- [ ] **Step 2: Create `app/api/users/[id]/route.ts`**
+- [x] **Step 2: Create `app/api/users/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -903,7 +903,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/api/users/
@@ -917,7 +917,7 @@ git commit -m "feat: add users API (admin assigns roles and teams)"
 **Files:**
 - Create: `app/(app)/layout.tsx`, `app/(app)/admin/products/page.tsx`, `app/(app)/admin/teams/page.tsx`, `app/(app)/admin/users/page.tsx`
 
-- [ ] **Step 1: Create `app/(app)/layout.tsx`**
+- [x] **Step 1: Create `app/(app)/layout.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -952,7 +952,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 }
 ```
 
-- [ ] **Step 2: Create `app/(app)/admin/products/page.tsx`**
+- [x] **Step 2: Create `app/(app)/admin/products/page.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -994,7 +994,7 @@ export default async function ProductsPage() {
 }
 ```
 
-- [ ] **Step 3: Create `app/(app)/admin/teams/page.tsx`**
+- [x] **Step 3: Create `app/(app)/admin/teams/page.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -1035,7 +1035,7 @@ export default async function TeamsPage() {
 }
 ```
 
-- [ ] **Step 4: Create `app/(app)/admin/users/page.tsx`**
+- [x] **Step 4: Create `app/(app)/admin/users/page.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -1082,7 +1082,7 @@ export default async function UsersPage() {
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/\(app\)/
@@ -1096,7 +1096,7 @@ git commit -m "feat: add admin UI pages for products, teams, and users"
 **Files:**
 - Create: `app/api/neighborhoods/route.ts`, `app/api/neighborhoods/[id]/route.ts`
 
-- [ ] **Step 1: Create `app/api/neighborhoods/route.ts`**
+- [x] **Step 1: Create `app/api/neighborhoods/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -1137,7 +1137,7 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Create `app/api/neighborhoods/[id]/route.ts`**
+- [x] **Step 2: Create `app/api/neighborhoods/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -1182,7 +1182,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/api/neighborhoods/
@@ -1196,7 +1196,7 @@ git commit -m "feat: add neighborhoods API with PostGIS boundary storage"
 **Files:**
 - Create: `app/api/houses/route.ts`, `app/api/houses/[id]/route.ts`, `lib/mapbox.ts`
 
-- [ ] **Step 1: Create `lib/mapbox.ts`**
+- [x] **Step 1: Create `lib/mapbox.ts`**
 
 ```typescript
 export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
@@ -1213,7 +1213,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
 }
 ```
 
-- [ ] **Step 2: Create `app/api/houses/route.ts`**
+- [x] **Step 2: Create `app/api/houses/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -1262,7 +1262,7 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-- [ ] **Step 3: Create `app/api/houses/[id]/route.ts`**
+- [x] **Step 3: Create `app/api/houses/[id]/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -1295,7 +1295,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/api/houses/ lib/mapbox.ts
@@ -1310,7 +1310,7 @@ git commit -m "feat: add houses API with PostGIS neighborhood auto-assignment"
 - Create: `app/api/households/route.ts`, `app/api/households/[id]/route.ts`
 - Create: `app/api/visits/route.ts`, `app/api/visits/[id]/route.ts`
 
-- [ ] **Step 1: Create `app/api/households/route.ts`**
+- [x] **Step 1: Create `app/api/households/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -1351,7 +1351,7 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Create `app/api/visits/route.ts`**
+- [x] **Step 2: Create `app/api/visits/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -1392,7 +1392,7 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/api/households/ app/api/visits/
@@ -1406,7 +1406,7 @@ git commit -m "feat: add households and visits API"
 **Files:**
 - Create: `components/map/MapView.tsx`, `components/map/HousePins.tsx`, `components/map/NeighborhoodLayer.tsx`, `app/(app)/map/page.tsx`
 
-- [ ] **Step 1: Create `components/map/MapView.tsx`**
+- [x] **Step 1: Create `components/map/MapView.tsx`**
 
 Note: This component must only be rendered client-side (no SSR). Always import it with `dynamic(() => import(...), { ssr: false })`.
 
@@ -1451,7 +1451,7 @@ export default function MapView({ neighborhoods, houses, onHouseClick, onMapClic
 }
 ```
 
-- [ ] **Step 2: Create `components/map/NeighborhoodLayer.tsx`**
+- [x] **Step 2: Create `components/map/NeighborhoodLayer.tsx`**
 
 ```tsx
 'use client'
@@ -1492,7 +1492,7 @@ export function NeighborhoodLayer({ neighborhoods }: Props) {
 }
 ```
 
-- [ ] **Step 3: Create `components/map/HousePins.tsx`**
+- [x] **Step 3: Create `components/map/HousePins.tsx`**
 
 ```tsx
 'use client'
@@ -1550,7 +1550,7 @@ export function HousePins({ houses, onHouseClick }: Props) {
 }
 ```
 
-- [ ] **Step 4: Create `app/(app)/map/page.tsx`**
+- [x] **Step 4: Create `app/(app)/map/page.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -1600,7 +1600,7 @@ export default async function MapPage() {
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add components/map/ app/\(app\)/map/
@@ -1614,7 +1614,7 @@ git commit -m "feat: add Mapbox map view with neighborhood polygons and color-co
 **Files:**
 - Create: `components/map/HousePanel.tsx`, `components/forms/VisitForm.tsx`, `components/forms/HouseholdForm.tsx`
 
-- [ ] **Step 1: Create `components/forms/VisitForm.tsx`**
+- [x] **Step 1: Create `components/forms/VisitForm.tsx`**
 
 ```tsx
 'use client'
@@ -1749,7 +1749,7 @@ export function VisitForm({ householdId, products, onSubmit, onCancel }: Props) 
 }
 ```
 
-- [ ] **Step 2: Create `components/forms/HouseholdForm.tsx`**
+- [x] **Step 2: Create `components/forms/HouseholdForm.tsx`**
 
 ```tsx
 'use client'
@@ -1800,7 +1800,7 @@ export function HouseholdForm({ houseId, onSubmit, onCancel }: Props) {
 }
 ```
 
-- [ ] **Step 3: Create `components/map/HousePanel.tsx`**
+- [x] **Step 3: Create `components/map/HousePanel.tsx`**
 
 ```tsx
 'use client'
@@ -2004,7 +2004,7 @@ export function HousePanel({ house, userRole, onClose }: Props) {
 }
 ```
 
-- [ ] **Step 4: Wire HousePanel into `app/(app)/map/page.tsx`**
+- [x] **Step 4: Wire HousePanel into `app/(app)/map/page.tsx`**
 
 Convert the map page to a client component wrapper that loads data server-side and passes it to a client shell:
 
@@ -2047,7 +2047,7 @@ export function MapShell({ neighborhoods, houses, userRole }: Props) {
 
 Update `app/(app)/map/page.tsx` to use `MapShell` instead of `MapView` directly.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add components/map/HousePanel.tsx components/map/MapShell.tsx components/forms/
@@ -2061,7 +2061,7 @@ git commit -m "feat: add house panel with visit history, visit logging, and hous
 **Files:**
 - Create: `components/map/DrawControl.tsx`, `components/forms/NeighborhoodForm.tsx`, `app/(app)/admin/neighborhoods/page.tsx`
 
-- [ ] **Step 1: Create `components/map/DrawControl.tsx`**
+- [x] **Step 1: Create `components/map/DrawControl.tsx`**
 
 ```tsx
 'use client'
@@ -2103,7 +2103,7 @@ export function DrawControl({ onDrawComplete }: Props) {
 }
 ```
 
-- [ ] **Step 2: Create `app/(app)/admin/neighborhoods/page.tsx`**
+- [x] **Step 2: Create `app/(app)/admin/neighborhoods/page.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -2242,7 +2242,7 @@ export function NeighborhoodAdminClient({ neighborhoods, teams }: Props) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/\(app\)/admin/neighborhoods/ components/map/DrawControl.tsx
@@ -2256,7 +2256,7 @@ git commit -m "feat: add neighborhood admin UI with draw and GeoJSON import"
 **Files:**
 - Create: `app/api/stats/route.ts`, `app/(app)/dashboard/page.tsx`, `components/dashboard/RepStats.tsx`, `components/dashboard/ManagerStats.tsx`, `components/dashboard/AdminStats.tsx`
 
-- [ ] **Step 1: Create `app/api/stats/route.ts`**
+- [x] **Step 1: Create `app/api/stats/route.ts`**
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -2327,7 +2327,7 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Create `app/(app)/dashboard/page.tsx`**
+- [x] **Step 2: Create `app/(app)/dashboard/page.tsx`**
 
 ```tsx
 import { auth } from '@/lib/auth'
@@ -2357,7 +2357,7 @@ export default async function DashboardPage() {
 }
 ```
 
-- [ ] **Step 3: Create `components/dashboard/RepStats.tsx`**
+- [x] **Step 3: Create `components/dashboard/RepStats.tsx`**
 
 ```tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -2395,7 +2395,7 @@ export function RepStats({ stats }: Props) {
 }
 ```
 
-- [ ] **Step 4: Create `components/dashboard/ManagerStats.tsx`**
+- [x] **Step 4: Create `components/dashboard/ManagerStats.tsx`**
 
 ```tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -2445,7 +2445,7 @@ export function ManagerStats({ stats }: Props) {
 }
 ```
 
-- [ ] **Step 5: Create `components/dashboard/AdminStats.tsx`**
+- [x] **Step 5: Create `components/dashboard/AdminStats.tsx`**
 
 ```tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -2479,7 +2479,7 @@ export function AdminStats({ stats }: Props) {
 }
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/api/stats/ app/\(app\)/dashboard/ components/dashboard/
@@ -2560,7 +2560,7 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-- [ ] **Commit self-review fix**
+- [x] **Commit self-review fix**
 
 ```bash
 git add app/api/houses/import/
