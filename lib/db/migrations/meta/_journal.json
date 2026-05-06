@@ -57,6 +57,13 @@
       "when": 1744848000000,
       "tag": "0007_households_spouse_name",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778044800000,
+      "tag": "0008_business_search_trgm",
+      "breakpoints": true
     }
   ]
 }

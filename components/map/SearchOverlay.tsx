@@ -13,49 +13,52 @@ type SearchResult =
 
 type Props = {
   open: boolean
-  businesses: BusinessRow[]
   onClose: () => void
   onSelect: (result: SearchResult) => void
 }
 
-export function SearchOverlay({ open, businesses, onClose, onSelect }: Props) {
+export function SearchOverlay({ open, onClose, onSelect }: Props) {
   const [query, setQuery] = useState('')
   const [houseResults, setHouseResults] = useState<HouseSearchResult[]>([])
+  const [bizResults, setBizResults] = useState<BusinessRow[]>([])
   const [searching, setSearching] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const abortRef = useRef<AbortController | null>(null)
+  const housesAbortRef = useRef<AbortController | null>(null)
+  const bizAbortRef = useRef<AbortController | null>(null)
 
-  // Server-side house search (address or surname)
+  // Server-side search: houses (address or surname) + businesses (name or address) in parallel
   useEffect(() => {
     clearTimeout(searchTimeout.current)
-    abortRef.current?.abort()
-    if (query.trim().length < 2) { setHouseResults([]); setSearching(false); return }
+    housesAbortRef.current?.abort()
+    bizAbortRef.current?.abort()
+    if (query.trim().length < 2) { setHouseResults([]); setBizResults([]); setSearching(false); return }
     setSearching(true)
     searchTimeout.current = setTimeout(() => {
-      const controller = new AbortController()
-      abortRef.current = controller
-      fetch(`/api/houses/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal })
+      const housesController = new AbortController()
+      const bizController = new AbortController()
+      housesAbortRef.current = housesController
+      bizAbortRef.current = bizController
+      const q = encodeURIComponent(query.trim())
+      const houses = fetch(`/api/houses/search?q=${q}`, { signal: housesController.signal })
         .then(r => r.json())
         .then((rows: HouseSearchResult[]) => setHouseResults(rows))
         .catch(e => { if (e.name !== 'AbortError') setHouseResults([]) })
-        .finally(() => setSearching(false))
+      const biz = fetch(`/api/businesses/search?q=${q}`, { signal: bizController.signal })
+        .then(r => r.json())
+        .then((rows: BusinessRow[]) => setBizResults(rows))
+        .catch(e => { if (e.name !== 'AbortError') setBizResults([]) })
+      Promise.all([houses, biz]).finally(() => setSearching(false))
     }, 400)
   }, [query])
 
-  // Client-side business search (businesses are fully loaded on mount)
-  const bizResults: { kind: 'business'; item: BusinessRow }[] = businesses
-    .filter(b =>
-      b.name.toLowerCase().includes(query.toLowerCase()) ||
-      [b.number, b.street].filter(Boolean).join(' ').toLowerCase().includes(query.toLowerCase())
-    )
-    .slice(0, 5)
-    .map(item => ({ kind: 'business' as const, item }))
+  const bizResultsForDisplay = bizResults.map(item => ({ kind: 'business' as const, item }))
 
   useEffect(() => {
     if (open) {
       setQuery('')
       setHouseResults([])
+      setBizResults([])
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [open])
@@ -150,12 +153,12 @@ export function SearchOverlay({ open, businesses, onClose, onSelect }: Props) {
             </div>
           )}
 
-          {bizResults.length > 0 && (
+          {bizResultsForDisplay.length > 0 && (
             <div className={cn(houseResultsForDisplay.length > 0 && 'border-t')}>
               <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Businesses
               </p>
-              {bizResults.map(r => (
+              {bizResultsForDisplay.map(r => (
                 <button
                   key={r.item.id}
                   onClick={() => handleSelect(r)}

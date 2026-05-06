@@ -215,7 +215,6 @@ export function MapShell({ userRole }: Props) {
 
       <SearchOverlay
         open={searchOpen}
-        businesses={businesses}
         onClose={() => setSearchOpen(false)}
         onSelect={result => {
           const { lat, lng } = result.item
