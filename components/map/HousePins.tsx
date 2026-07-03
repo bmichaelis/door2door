@@ -1,26 +1,16 @@
 'use client'
 import { Source, Layer } from 'react-map-gl/mapbox'
 import type { HouseRow } from '@/lib/db/schema'
-
-function pinColor(house: HouseRow & { lastOutcome?: string | null }): string {
-  if (house.doNotKnock || house.noSolicitingSign) return '#000000'
-  switch (house.lastOutcome) {
-    case 'sold': return '#22c55e'
-    case 'interested': case 'maybe': return '#eab308'
-    case 'not_interested': case 'refused': return '#ef4444'
-    default: return '#9ca3af'
-  }
-}
-
-type HouseWithOutcome = HouseRow & { lastOutcome?: string | null }
+import { pinColor } from '@/lib/statuses'
 
 type Props = {
-  houses: HouseWithOutcome[]
-  onHouseClick: (house: HouseWithOutcome) => void
+  houses: HouseRow[]
+  statusColors: Record<string, string>
+  onHouseClick: (house: HouseRow) => void
   selectedHouseId?: string | null
 }
 
-export function HousePins({ houses, selectedHouseId }: Props) {
+export function HousePins({ houses, statusColors, selectedHouseId }: Props) {
   const geojson: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',
     features: houses.map(h => ({
@@ -29,7 +19,7 @@ export function HousePins({ houses, selectedHouseId }: Props) {
       geometry: { type: 'Point', coordinates: [h.lng, h.lat] },
       properties: {
         id: h.id,
-        color: pinColor(h),
+        color: pinColor(h, statusColors),
         flagged: h.doNotKnock || h.noSolicitingSign,
       },
     })),

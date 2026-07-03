@@ -4,8 +4,9 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog'
 import { HousePanel } from './HousePanel'
 import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
-import type { Neighborhood } from '@/lib/db/schema'
-import { type HouseWithOutcome, parseHouseNumber } from '@/lib/houses'
+import type { HouseRow, Neighborhood } from '@/lib/db/schema'
+import { parseHouseNumber } from '@/lib/houses'
+import { type StatusOption } from '@/lib/statuses'
 import type { BusinessRow } from './BusinessPins'
 import type { LayerVisibility, ViewportBounds } from './MapView'
 import MapStyleToggle, { type MapStyle } from './MapStyleToggle'
@@ -14,8 +15,6 @@ import { SearchOverlay } from './SearchOverlay'
 import { SearchIcon } from 'lucide-react'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
-
-export type { HouseWithOutcome }
 
 const HOUSE_ZOOM_THRESHOLD = 14
 
@@ -27,8 +26,9 @@ type Props = {
 
 export function MapShell({ userRole }: Props) {
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodWithCount[]>([])
-  const [houses, setHouses] = useState<HouseWithOutcome[]>([])
+  const [houses, setHouses] = useState<HouseRow[]>([])
   const [businesses, setBusinesses] = useState<BusinessRow[]>([])
+  const [statuses, setStatuses] = useState<StatusOption[]>([])
   const [dataLoading, setDataLoading] = useState(true)
   const [layers, setLayers] = useState<LayerVisibility>({ homes: true, businesses: true })
   const [mapStyle, setMapStyle] = useState<MapStyle>('streets')
@@ -54,6 +54,10 @@ export function MapShell({ userRole }: Props) {
 
   // On mount: load neighborhoods (with house counts) only — houses + businesses load lazily by viewport
   useEffect(() => {
+    fetch('/api/statuses')
+      .then(r => r.json())
+      .then(setStatuses)
+      .catch(() => {})
     fetch('/api/neighborhoods')
       .then(r => r.json())
       .then((nbhds: NeighborhoodWithCount[]) => {
@@ -67,7 +71,7 @@ export function MapShell({ userRole }: Props) {
     const { west, south, east, north } = bounds
     fetch(`/api/houses?bbox=${west},${south},${east},${north}`)
       .then(r => r.json())
-      .then((rows: HouseWithOutcome[]) => setHouses(rows))
+      .then((rows: HouseRow[]) => setHouses(rows))
       .catch(() => {})
   }
 
@@ -111,8 +115,8 @@ export function MapShell({ userRole }: Props) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [targetLocation, setTargetLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessRow | null>(null)
-  const [overrides, setOverrides] = useState<Map<string, Partial<HouseWithOutcome>>>(new Map())
-  const [selectedHouse, setSelectedHouse] = useState<HouseWithOutcome | null>(null)
+  const [overrides, setOverrides] = useState<Map<string, Partial<HouseRow>>>(new Map())
+  const [selectedHouse, setSelectedHouse] = useState<HouseRow | null>(null)
   const [highlightedHouseId, setHighlightedHouseId] = useState<string | null>(null)
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
@@ -120,6 +124,11 @@ export function MapShell({ userRole }: Props) {
   const effectiveHouses = useMemo(
     () => houses.map(h => { const o = overrides.get(h.id); return o ? { ...h, ...o } : h }),
     [houses, overrides]
+  )
+
+  const statusColors = useMemo(
+    () => Object.fromEntries(statuses.map(s => [s.id, s.color])),
+    [statuses]
   )
 
   const adjacentHouses = useMemo(() => {
@@ -134,7 +143,7 @@ export function MapShell({ userRole }: Props) {
     }
   }, [selectedHouse, effectiveHouses])
 
-  function handleHouseUpdate(id: string, updates: Partial<HouseWithOutcome>) {
+  function handleHouseUpdate(id: string, updates: Partial<HouseRow>) {
     setOverrides(prev => {
       const next = new Map(prev)
       next.set(id, { ...(prev.get(id) ?? {}), ...updates })
@@ -174,6 +183,7 @@ export function MapShell({ userRole }: Props) {
         businesses={businesses}
         layers={layers}
         mapStyle={mapStyle}
+        statusColors={statusColors}
         initialCenter={lastCenter}
         targetLocation={targetLocation}
         selectedHouseId={highlightedHouseId}

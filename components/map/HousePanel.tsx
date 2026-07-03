@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { VisitForm, type VisitFormData } from '@/components/forms/VisitForm'
 import { HouseholdForm } from '@/components/forms/HouseholdForm'
 import type { HouseRow } from '@/lib/db/schema'
-import { formatAddress, type HouseWithOutcome } from '@/lib/houses'
+import { formatAddress } from '@/lib/houses'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; spouseName: string | null; active: boolean; createdAt: string }
@@ -19,10 +19,10 @@ type Props = {
   house: HouseRow | null
   userRole: string
   onClose: () => void
-  onHouseUpdate?: (id: string, updates: Partial<HouseRow & { lastOutcome?: string | null }>) => void
-  prevHouse?: HouseWithOutcome | null
-  nextHouse?: HouseWithOutcome | null
-  onHouseChange?: (house: HouseWithOutcome) => void
+  onHouseUpdate?: (id: string, updates: Partial<HouseRow>) => void
+  prevHouse?: HouseRow | null
+  nextHouse?: HouseRow | null
+  onHouseChange?: (house: HouseRow) => void
 }
 
 type View = 'detail' | 'log-visit' | 'new-household'
@@ -122,7 +122,6 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse,
       body: JSON.stringify(data),
     })
     if (!res.ok) { setError('Failed to save visit. Please try again.'); return }
-    if (house) onHouseUpdate?.(house.id, { lastOutcome: data.saleOutcome ?? null })
     setView('detail')
     setVisitHouseholdId(null)
     fetchData()
