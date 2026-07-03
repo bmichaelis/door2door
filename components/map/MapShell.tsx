@@ -143,6 +143,11 @@ export function MapShell({ userRole }: Props) {
     }
   }, [selectedHouse, effectiveHouses])
 
+  function handleBusinessUpdate(id: string, updates: Partial<BusinessRow>) {
+    setBusinesses(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
+    setSelectedBusiness(prev => prev?.id === id ? { ...prev, ...updates } : prev)
+  }
+
   function handleHouseUpdate(id: string, updates: Partial<HouseRow>) {
     setOverrides(prev => {
       const next = new Map(prev)
@@ -242,10 +247,13 @@ export function MapShell({ userRole }: Props) {
       />
       <BusinessPanel
         business={selectedBusiness}
+        statuses={statuses}
+        onBusinessUpdate={handleBusinessUpdate}
         onClose={() => setSelectedBusiness(null)}
       />
       <HousePanel
         house={selectedHouse}
+        statuses={statuses}
         userRole={userRole}
         onClose={() => setSelectedHouse(null)}
         onHouseUpdate={handleHouseUpdate}

@@ -1,4 +1,5 @@
 'use client'
+import { useMemo } from 'react'
 import { Source, Layer } from 'react-map-gl/mapbox'
 import type { HouseRow } from '@/lib/db/schema'
 import { pinColor } from '@/lib/statuses'
@@ -11,7 +12,7 @@ type Props = {
 }
 
 export function HousePins({ houses, statusColors, selectedHouseId }: Props) {
-  const geojson: GeoJSON.FeatureCollection = {
+  const geojson = useMemo<GeoJSON.FeatureCollection>(() => ({
     type: 'FeatureCollection',
     features: houses.map(h => ({
       type: 'Feature',
@@ -23,7 +24,7 @@ export function HousePins({ houses, statusColors, selectedHouseId }: Props) {
         flagged: h.doNotKnock || h.noSolicitingSign,
       },
     })),
-  }
+  }), [houses, statusColors])
 
   return (
     <Source id="houses" type="geojson" data={geojson}>

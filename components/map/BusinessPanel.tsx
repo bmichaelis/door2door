@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { BusinessRow } from './BusinessPins'
 import { PhoneIcon, GlobeIcon, MapPinIcon } from 'lucide-react'
+import { StatusChips } from './StatusChips'
+import type { StatusOption } from '@/lib/statuses'
 
 type Visit = {
   id: string
@@ -22,7 +24,9 @@ type Product = { id: string; name: string }
 
 type Props = {
   business: BusinessRow | null
+  statuses: StatusOption[]
   onClose: () => void
+  onBusinessUpdate?: (id: string, updates: Partial<BusinessRow>) => void
 }
 
 function OptionGroup<T extends string>({
@@ -65,10 +69,11 @@ const OUTCOME_STYLES: Record<string, string> = {
   not_sold: 'bg-red-100 text-red-800',
 }
 
-export function BusinessPanel({ business, onClose }: Props) {
+export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }: Props) {
   const [view, setView] = useState<'detail' | 'log-visit'>('detail')
   const [visits, setVisits] = useState<Visit[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   // Visit form state
   const [contactStatus, setContactStatus] = useState<'answered' | 'not_home' | 'refused'>('answered')
@@ -100,6 +105,22 @@ export function BusinessPanel({ business, onClose }: Props) {
     setFollowUpAt('')
   }
 
+  async function handleStatusSelect(statusId: string | null) {
+    if (!business) return
+    const previous = business.statusId
+    setStatusError(null)
+    onBusinessUpdate?.(business.id, { statusId })
+    const res = await fetch(`/api/businesses/${business.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statusId }),
+    })
+    if (!res.ok) {
+      onBusinessUpdate?.(business.id, { statusId: previous })
+      setStatusError('Failed to update status. Please try again.')
+    }
+  }
+
   async function handleSaveVisit(e: React.FormEvent) {
     e.preventDefault()
     if (!business) return
@@ -120,6 +141,9 @@ export function BusinessPanel({ business, onClose }: Props) {
     if (res.ok) {
       const visit = await res.json()
       setVisits(prev => [visit, ...prev])
+      if (business && visit.businessStatusId !== undefined) {
+        onBusinessUpdate?.(business.id, { statusId: visit.businessStatusId })
+      }
       resetForm()
       setView('detail')
     }
@@ -169,6 +193,12 @@ export function BusinessPanel({ business, onClose }: Props) {
                     </a>
                   </div>
                 )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</p>
+                {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
+                <StatusChips statuses={statuses} value={business?.statusId ?? null} onSelect={handleStatusSelect} />
               </div>
 
               <Button className="w-full" onClick={() => setView('log-visit')}>
