@@ -5,7 +5,8 @@ import { db } from '@/lib/db'
 import { visits } from '@/lib/db/schema'
 import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, sql } from 'drizzle-orm'
+import { visitAutoKey } from '@/lib/statuses'
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const session = await auth()
@@ -43,5 +44,29 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     installDate: body.installDate ? new Date(body.installDate) : null,
     serviceDate: body.serviceDate ? new Date(body.serviceDate) : null,
   }).returning()
-  return NextResponse.json(visit, { status: 201 })
+
+  // Auto-set the house status from the visit outcome. Never fail the visit
+  // insert over this — visit logging is the critical path.
+  let houseStatusId: string | null = null
+  try {
+    const autoKey = visitAutoKey(body)
+    if (autoKey) {
+      await db.execute(sql`
+        UPDATE houses SET status_id = s.id
+        FROM statuses s
+        WHERE s.auto_key = ${autoKey}
+          AND houses.id = (SELECT house_id FROM households WHERE id = ${body.householdId})
+      `)
+    }
+    const row = await db.execute(sql`
+      SELECT h.status_id AS "statusId" FROM houses h
+      JOIN households ho ON ho.house_id = h.id
+      WHERE ho.id = ${body.householdId}
+    `)
+    houseStatusId = (row.rows[0]?.statusId as string | undefined) ?? null
+  } catch (e) {
+    console.error('status auto-set failed', e)
+  }
+
+  return NextResponse.json({ ...visit, houseStatusId }, { status: 201 })
 })

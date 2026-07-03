@@ -5,7 +5,8 @@ import { db } from '@/lib/db'
 import { businessVisits } from '@/lib/db/schema'
 import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, sql } from 'drizzle-orm'
+import { visitAutoKey } from '@/lib/statuses'
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const session = await auth()
@@ -47,5 +48,23 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     productId: productId ?? null,
   }).returning()
 
-  return NextResponse.json(visit)
+  let businessStatusId: string | null = null
+  try {
+    const autoKey = visitAutoKey(body)
+    if (autoKey) {
+      await db.execute(sql`
+        UPDATE businesses SET status_id = s.id
+        FROM statuses s
+        WHERE s.auto_key = ${autoKey} AND businesses.id = ${businessId}
+      `)
+    }
+    const row = await db.execute(sql`
+      SELECT status_id AS "statusId" FROM businesses WHERE id = ${businessId}
+    `)
+    businessStatusId = (row.rows[0]?.statusId as string | undefined) ?? null
+  } catch (e) {
+    console.error('status auto-set failed', e)
+  }
+
+  return NextResponse.json({ ...visit, businessStatusId })
 })
