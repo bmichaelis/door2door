@@ -6,7 +6,7 @@ import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { sql } from 'drizzle-orm'
 
-// Shared column list (no lastOutcome — computed per-branch below)
+// Shared column list
 const HOUSE_COLS = (alias = 'h') => sql`
   ${sql.raw(alias)}.id,
   ${sql.raw(alias)}.number,
@@ -22,10 +22,7 @@ const HOUSE_COLS = (alias = 'h') => sql`
   ${sql.raw(alias)}.do_not_knock      AS "doNotKnock",
   ${sql.raw(alias)}.no_soliciting_sign AS "noSolicitingSign",
   ${sql.raw(alias)}.created_at        AS "createdAt",
-  (SELECT vi.sale_outcome FROM visits vi
-   JOIN households ho2 ON vi.household_id = ho2.id
-   WHERE ho2.house_id = ${sql.raw(alias)}.id
-   ORDER BY vi.created_at DESC LIMIT 1) AS "lastOutcome"
+  ${sql.raw(alias)}.status_id           AS "statusId"
 `
 
 export const GET = withErrorHandling(async (req: NextRequest) => {

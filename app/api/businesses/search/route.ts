@@ -13,6 +13,7 @@ const BUSINESS_COLS = sql`
   businesses.external_id as "externalId",
   ST_Y(businesses.location) as lat, ST_X(businesses.location) as lng,
   businesses.neighborhood_id as "neighborhoodId",
+  businesses.status_id as "statusId",
   businesses.created_at as "createdAt"
 `
 
