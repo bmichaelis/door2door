@@ -34,6 +34,7 @@ export function StatusesClient({ initialStatuses }: Props) {
   async function refresh() {
     const res = await fetch('/api/statuses')
     if (res.ok) setItems(await res.json())
+    else setError('Could not reload statuses')
     router.refresh()
   }
 
@@ -45,13 +46,14 @@ export function StatusesClient({ initialStatuses }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    setBusy(false)
     if (!res.ok) {
       const data = await res.json().catch(() => null)
       setError(data?.error ?? 'Update failed')
+      setBusy(false)
       return false
     }
     await refresh()
+    setBusy(false)
     return true
   }
 
@@ -65,14 +67,15 @@ export function StatusesClient({ initialStatuses }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName.trim(), color: newColor }),
     })
-    setBusy(false)
     if (!res.ok) {
       const data = await res.json().catch(() => null)
       setError(data?.error ?? 'Create failed')
+      setBusy(false)
       return
     }
     setNewName('')
     await refresh()
+    setBusy(false)
   }
 
   async function handleDelete(s: Status) {
@@ -80,13 +83,14 @@ export function StatusesClient({ initialStatuses }: Props) {
     setError(null)
     setBusy(true)
     const res = await fetch(`/api/statuses/${s.id}`, { method: 'DELETE' })
-    setBusy(false)
     if (!res.ok) {
       const data = await res.json().catch(() => null)
       setError(data?.error ?? 'Delete failed')
+      setBusy(false)
       return
     }
     await refresh()
+    setBusy(false)
   }
 
   async function move(index: number, dir: -1 | 1) {
@@ -94,8 +98,10 @@ export function StatusesClient({ initialStatuses }: Props) {
     const b = items[index + dir]
     if (!a || !b) return
     // Swap sort orders via two PATCHes; refresh re-sorts
+    setBusy(true)
     const ok = await patch(a.id, { sortOrder: b.sortOrder })
     if (ok) await patch(b.id, { sortOrder: a.sortOrder })
+    setBusy(false)
   }
 
   return (
@@ -178,7 +184,7 @@ export function StatusesClient({ initialStatuses }: Props) {
   )
 }
 
-function EditableName({ status, onSave }: { status: Status; onSave: (name: string) => void }) {
+function EditableName({ status, onSave }: { status: Status; onSave: (name: string) => Promise<boolean> }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(status.name)
 
@@ -192,7 +198,12 @@ function EditableName({ status, onSave }: { status: Status; onSave: (name: strin
   return (
     <form
       className="flex items-center gap-2"
-      onSubmit={e => { e.preventDefault(); if (name.trim()) { onSave(name.trim()); setEditing(false) } }}
+      onSubmit={async e => {
+        e.preventDefault()
+        if (!name.trim()) return
+        const ok = await onSave(name.trim())
+        if (ok) setEditing(false)
+      }}
     >
       <Input value={name} onChange={e => setName(e.target.value)} className="h-8" autoFocus />
       <Button type="submit" size="sm">Save</Button>
