@@ -49,6 +49,7 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [visitHouseholdId, setVisitHouseholdId] = useState<string | null>(null)
+  const [statusUpdating, setStatusUpdating] = useState(false)
 
   const activeHousehold = households.find(h => h.active)
 
@@ -147,6 +148,7 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
   async function handleStatusSelect(statusId: string | null) {
     if (!house) return
     const previous = house.statusId
+    setStatusUpdating(true)
     onHouseUpdate?.(house.id, { statusId })
     const res = await fetch(`/api/houses/${house.id}`, {
       method: 'PATCH',
@@ -157,6 +159,7 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
       onHouseUpdate?.(house.id, { statusId: previous })
       setError('Failed to update status. Please try again.')
     }
+    setStatusUpdating(false)
   }
 
   async function handleFlagToggle(field: 'noSolicitingSign' | 'doNotKnock') {
@@ -278,7 +281,7 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
               {/* Status */}
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</p>
-                <StatusChips statuses={statuses} value={house?.statusId ?? null} onSelect={handleStatusSelect} />
+                <StatusChips statuses={statuses} value={house?.statusId ?? null} onSelect={handleStatusSelect} disabled={statusUpdating} />
               </div>
 
               {/* Actions */}

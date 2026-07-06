@@ -74,6 +74,7 @@ export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }:
   const [visits, setVisits] = useState<Visit[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [statusUpdating, setStatusUpdating] = useState(false)
 
   // Visit form state
   const [contactStatus, setContactStatus] = useState<'answered' | 'not_home' | 'refused'>('answered')
@@ -87,6 +88,7 @@ export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }:
     if (!business) { setView('detail'); return }
     setView('detail')
     setVisits([])
+    setStatusError(null)
     fetch(`/api/business-visits?businessId=${business.id}`)
       .then(r => r.json())
       .then(setVisits)
@@ -109,6 +111,7 @@ export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }:
     if (!business) return
     const previous = business.statusId
     setStatusError(null)
+    setStatusUpdating(true)
     onBusinessUpdate?.(business.id, { statusId })
     const res = await fetch(`/api/businesses/${business.id}`, {
       method: 'PATCH',
@@ -119,6 +122,7 @@ export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }:
       onBusinessUpdate?.(business.id, { statusId: previous })
       setStatusError('Failed to update status. Please try again.')
     }
+    setStatusUpdating(false)
   }
 
   async function handleSaveVisit(e: React.FormEvent) {
@@ -198,7 +202,7 @@ export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }:
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</p>
                 {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
-                <StatusChips statuses={statuses} value={business?.statusId ?? null} onSelect={handleStatusSelect} />
+                <StatusChips statuses={statuses} value={business?.statusId ?? null} onSelect={handleStatusSelect} disabled={statusUpdating} />
               </div>
 
               <Button className="w-full" onClick={() => setView('log-visit')}>
