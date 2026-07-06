@@ -17,7 +17,7 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   const [existing] = await db.select().from(statuses).where(eq(statuses.id, id))
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (existing.autoKey && body.active === false) {
+  if (existing.autoKey && body.active !== undefined && !body.active) {
     return NextResponse.json({ error: 'System statuses cannot be deactivated' }, { status: 400 })
   }
   if (body.color !== undefined && !isValidHexColor(body.color)) {
@@ -32,6 +32,10 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   if (body.color !== undefined) updates.color = body.color
   if (body.sortOrder !== undefined) updates.sortOrder = Number(body.sortOrder)
   if (body.active !== undefined) updates.active = Boolean(body.active)
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+  }
 
   const [status] = await db.update(statuses).set(updates).where(eq(statuses.id, id)).returning()
   return NextResponse.json(status)

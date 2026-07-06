@@ -148,18 +148,22 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
   async function handleStatusSelect(statusId: string | null) {
     if (!house) return
     const previous = house.statusId
+    setError(null)
     setStatusUpdating(true)
     onHouseUpdate?.(house.id, { statusId })
-    const res = await fetch(`/api/houses/${house.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ statusId }),
-    })
-    if (!res.ok) {
+    try {
+      const res = await fetch(`/api/houses/${house.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statusId }),
+      })
+      if (!res.ok) throw new Error('status update failed')
+    } catch {
       onHouseUpdate?.(house.id, { statusId: previous })
       setError('Failed to update status. Please try again.')
+    } finally {
+      setStatusUpdating(false)
     }
-    setStatusUpdating(false)
   }
 
   async function handleFlagToggle(field: 'noSolicitingSign' | 'doNotKnock') {

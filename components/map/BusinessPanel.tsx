@@ -113,16 +113,19 @@ export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }:
     setStatusError(null)
     setStatusUpdating(true)
     onBusinessUpdate?.(business.id, { statusId })
-    const res = await fetch(`/api/businesses/${business.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ statusId }),
-    })
-    if (!res.ok) {
+    try {
+      const res = await fetch(`/api/businesses/${business.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statusId }),
+      })
+      if (!res.ok) throw new Error('status update failed')
+    } catch {
       onBusinessUpdate?.(business.id, { statusId: previous })
       setStatusError('Failed to update status. Please try again.')
+    } finally {
+      setStatusUpdating(false)
     }
-    setStatusUpdating(false)
   }
 
   async function handleSaveVisit(e: React.FormEvent) {
