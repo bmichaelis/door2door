@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions } from './schema'
+import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions, statuses, businesses } from './schema'
 
 describe('schema', () => {
   it('users table has required columns', () => {
@@ -41,5 +41,23 @@ describe('schema', () => {
   it('houses table has legal flag columns', () => {
     expect(houses.doNotKnock).toBeDefined()
     expect(houses.noSolicitingSign).toBeDefined()
+  })
+
+  it('statuses table has required columns', () => {
+    expect(statuses.id).toBeDefined()
+    expect(statuses.name).toBeDefined()
+    expect(statuses.color).toBeDefined()
+    expect(statuses.sortOrder).toBeDefined()
+    expect(statuses.active).toBeDefined()
+    expect(statuses.autoKey).toBeDefined()
+    expect((statuses.sortOrder as { name: string }).name).toBe('sort_order')
+    expect((statuses.autoKey as { name: string }).name).toBe('auto_key')
+  })
+
+  it('houses and businesses have statusId column', () => {
+    expect(houses.statusId).toBeDefined()
+    expect((houses.statusId as { name: string }).name).toBe('status_id')
+    expect(businesses.statusId).toBeDefined()
+    expect((businesses.statusId as { name: string }).name).toBe('status_id')
   })
 })

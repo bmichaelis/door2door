@@ -2,7 +2,7 @@ export const runtime = 'edge'
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { houses } from '@/lib/db/schema'
+import { houses, statuses } from '@/lib/db/schema'
 import { requireRole, canSetDoNotKnock } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { eq, sql } from 'drizzle-orm'
@@ -23,6 +23,16 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
     updates.doNotKnock = body.doNotKnock
   }
 
+  if ('statusId' in body) {
+    if (body.statusId !== null) {
+      const [status] = await db.select().from(statuses).where(eq(statuses.id, body.statusId))
+      if (!status || !status.active) {
+        return NextResponse.json({ error: 'Unknown or inactive statusId' }, { status: 400 })
+      }
+    }
+    updates.statusId = body.statusId
+  }
+
   await db.update(houses).set(updates).where(eq(houses.id, id))
 
   const result = await db.execute(
@@ -34,6 +44,7 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
       houses.neighborhood_id as "neighborhoodId",
       houses.do_not_knock as "doNotKnock",
       houses.no_soliciting_sign as "noSolicitingSign",
+      houses.status_id as "statusId",
       houses.created_at as "createdAt"
       FROM houses WHERE houses.id = ${id}`
   )

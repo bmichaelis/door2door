@@ -17,16 +17,7 @@ const HOUSE_COLS = sql`
   houses.do_not_knock as "doNotKnock",
   houses.no_soliciting_sign as "noSolicitingSign",
   houses.created_at as "createdAt",
-  _last_visit.sale_outcome as "lastOutcome"
-`
-
-const LAST_VISIT_LATERAL = sql`
-  LEFT JOIN LATERAL (
-    SELECT vi.sale_outcome FROM visits vi
-    JOIN households ho ON vi.household_id = ho.id
-    WHERE ho.house_id = houses.id
-    ORDER BY vi.created_at DESC LIMIT 1
-  ) _last_visit ON true
+  houses.status_id as "statusId"
 `
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
@@ -45,7 +36,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     }
     const [minLng, minLat, maxLng, maxLat] = parts
     const rows = await db.execute(
-      sql`SELECT ${HOUSE_COLS} FROM houses ${LAST_VISIT_LATERAL}
+      sql`SELECT ${HOUSE_COLS} FROM houses
           WHERE ST_Within(houses.location, ST_MakeEnvelope(${minLng}, ${minLat}, ${maxLng}, ${maxLat}, 4326))`
     )
     return NextResponse.json(rows.rows)
@@ -53,8 +44,8 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
   if (role === 'admin') {
     const query = neighborhoodId
-      ? sql`SELECT ${HOUSE_COLS} FROM houses ${LAST_VISIT_LATERAL} WHERE houses.neighborhood_id = ${neighborhoodId}`
-      : sql`SELECT ${HOUSE_COLS} FROM houses ${LAST_VISIT_LATERAL}`
+      ? sql`SELECT ${HOUSE_COLS} FROM houses WHERE houses.neighborhood_id = ${neighborhoodId}`
+      : sql`SELECT ${HOUSE_COLS} FROM houses`
     const rows = await db.execute(query)
     return NextResponse.json(rows.rows)
   }
@@ -64,11 +55,9 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const query = neighborhoodId
     ? sql`SELECT ${HOUSE_COLS} FROM houses
           JOIN neighborhoods n ON houses.neighborhood_id = n.id
-          ${LAST_VISIT_LATERAL}
           WHERE n.team_id = ${teamId} AND houses.neighborhood_id = ${neighborhoodId}`
     : sql`SELECT ${HOUSE_COLS} FROM houses
           JOIN neighborhoods n ON houses.neighborhood_id = n.id
-          ${LAST_VISIT_LATERAL}
           WHERE n.team_id = ${teamId}`
   const rows = await db.execute(query)
   return NextResponse.json(rows.rows)

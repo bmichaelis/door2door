@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { SearchIcon, XIcon, HomeIcon, BuildingIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { HouseWithOutcome } from '@/lib/houses'
+import type { HouseRow } from '@/lib/db/schema'
 import type { BusinessRow } from './BusinessPins'
 
-type HouseSearchResult = HouseWithOutcome & { surname?: string | null; headOfHouseholdName?: string | null; spouseName?: string | null }
+type HouseSearchResult = HouseRow & { surname?: string | null; headOfHouseholdName?: string | null; spouseName?: string | null }
 
 type SearchResult =
   | { kind: 'house'; item: HouseSearchResult }

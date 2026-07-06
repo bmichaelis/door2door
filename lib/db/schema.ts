@@ -75,6 +75,20 @@ export const products = pgTable('products', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const statuses = pgTable('statuses', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').notNull(), // hex, e.g. #22c55e
+  sortOrder: integer('sort_order').default(0).notNull(),
+  active: boolean('active').default(true).notNull(),
+  // System rows carry an autoKey targeted by visit auto-set; they can be
+  // renamed/recolored but not deleted or deactivated. Custom rows: autoKey null.
+  autoKey: text('auto_key', {
+    enum: ['not_home', 'interested', 'callback', 'customer', 'not_interested'],
+  }).unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 export const neighborhoods = pgTable('neighborhoods', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -97,6 +111,7 @@ export const houses = pgTable('houses', {
   neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id),
   doNotKnock: boolean('do_not_knock').default(false).notNull(),
   noSolicitingSign: boolean('no_soliciting_sign').default(false).notNull(),
+  statusId: uuid('status_id').references(() => statuses.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -140,6 +155,7 @@ export const businesses = pgTable('businesses', {
   externalId: text('external_id').unique(), // e.g. "osm:node/12345"
   location: geometryPoint('location').notNull(),
   neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id),
+  statusId: uuid('status_id').references(() => statuses.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -160,6 +176,7 @@ export const businessVisits = pgTable('business_visits', {
 export type User = typeof users.$inferSelect
 export type Team = typeof teams.$inferSelect
 export type Product = typeof products.$inferSelect
+export type Status = typeof statuses.$inferSelect
 export type Neighborhood = typeof neighborhoods.$inferSelect
 export type House = typeof houses.$inferSelect
 export type Household = typeof households.$inferSelect

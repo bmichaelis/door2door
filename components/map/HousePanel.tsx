@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { VisitForm, type VisitFormData } from '@/components/forms/VisitForm'
 import { HouseholdForm } from '@/components/forms/HouseholdForm'
 import type { HouseRow } from '@/lib/db/schema'
-import { formatAddress, type HouseWithOutcome } from '@/lib/houses'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { StatusChips } from './StatusChips'
+import type { StatusOption } from '@/lib/statuses'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; spouseName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
@@ -18,11 +19,12 @@ type Product = { id: string; name: string }
 type Props = {
   house: HouseRow | null
   userRole: string
+  statuses: StatusOption[]
   onClose: () => void
-  onHouseUpdate?: (id: string, updates: Partial<HouseRow & { lastOutcome?: string | null }>) => void
-  prevHouse?: HouseWithOutcome | null
-  nextHouse?: HouseWithOutcome | null
-  onHouseChange?: (house: HouseWithOutcome) => void
+  onHouseUpdate?: (id: string, updates: Partial<HouseRow>) => void
+  prevHouse?: HouseRow | null
+  nextHouse?: HouseRow | null
+  onHouseChange?: (house: HouseRow) => void
 }
 
 type View = 'detail' | 'log-visit' | 'new-household'
@@ -39,7 +41,7 @@ const CONTACT_LABEL: Record<string, string> = {
   refused: 'Refused',
 }
 
-export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse, nextHouse, onHouseChange }: Props) {
+export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, prevHouse, nextHouse, onHouseChange }: Props) {
   const [view, setView] = useState<View>('detail')
   const [households, setHouseholds] = useState<Household[]>([])
   const [visits, setVisits] = useState<Visit[]>([])
@@ -47,6 +49,7 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse,
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [visitHouseholdId, setVisitHouseholdId] = useState<string | null>(null)
+  const [statusUpdating, setStatusUpdating] = useState(false)
 
   const activeHousehold = households.find(h => h.active)
 
@@ -122,7 +125,10 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse,
       body: JSON.stringify(data),
     })
     if (!res.ok) { setError('Failed to save visit. Please try again.'); return }
-    if (house) onHouseUpdate?.(house.id, { lastOutcome: data.saleOutcome ?? null })
+    const saved = await res.json()
+    if (house && saved.houseStatusId !== undefined) {
+      onHouseUpdate?.(house.id, { statusId: saved.houseStatusId })
+    }
     setView('detail')
     setVisitHouseholdId(null)
     fetchData()
@@ -137,6 +143,27 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse,
     if (!res.ok) { setError('Failed to save household. Please try again.'); return }
     setView('detail')
     fetchData()
+  }
+
+  async function handleStatusSelect(statusId: string | null) {
+    if (!house) return
+    const previous = house.statusId
+    setError(null)
+    setStatusUpdating(true)
+    onHouseUpdate?.(house.id, { statusId })
+    try {
+      const res = await fetch(`/api/houses/${house.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statusId }),
+      })
+      if (!res.ok) throw new Error('status update failed')
+    } catch {
+      onHouseUpdate?.(house.id, { statusId: previous })
+      setError('Failed to update status. Please try again.')
+    } finally {
+      setStatusUpdating(false)
+    }
   }
 
   async function handleFlagToggle(field: 'noSolicitingSign' | 'doNotKnock') {
@@ -253,6 +280,12 @@ export function HousePanel({ house, userRole, onClose, onHouseUpdate, prevHouse,
                 ) : (
                   <p className="text-sm text-muted-foreground">No household on record</p>
                 )}
+              </div>
+
+              {/* Status */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</p>
+                <StatusChips statuses={statuses} value={house?.statusId ?? null} onSelect={handleStatusSelect} disabled={statusUpdating} />
               </div>
 
               {/* Actions */}
