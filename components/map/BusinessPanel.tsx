@@ -15,6 +15,7 @@ import { NotesSection } from './NotesSection'
 import { useTags } from './useTags'
 import { useNotes } from './useNotes'
 import { AppointmentForm } from '@/components/appointments/AppointmentForm'
+import { PhotoSection } from '@/components/photos/PhotoSection'
 
 type Visit = {
   id: string
@@ -252,6 +253,11 @@ export function BusinessPanel({ business, statuses, currentUser, onClose, onBusi
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</p>
                 {noteError && <p className="mb-2 text-sm text-destructive">{noteError}</p>}
                 <NotesSection notes={bizNotes} currentUser={currentUser} onAdd={addNote} onDelete={removeNote} busy={noteBusy} />
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Photos</p>
+                <PhotoSection entity="business" entityId={business?.id ?? null} currentUser={currentUser} />
               </div>
 
               {/* Recent visits */}

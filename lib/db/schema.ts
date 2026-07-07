@@ -224,6 +224,22 @@ export const appointments = pgTable('appointments', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const housePhotos = pgTable('house_photos', {
+  id: uuid('id').primaryKey(), // supplied by the upload route — embedded in the R2 key
+  houseId: uuid('house_id').notNull().references(() => houses.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  r2Key: text('r2_key').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const businessPhotos = pgTable('business_photos', {
+  id: uuid('id').primaryKey(), // supplied by the upload route — embedded in the R2 key
+  businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  r2Key: text('r2_key').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // Type exports
 export type User = typeof users.$inferSelect
 export type Team = typeof teams.$inferSelect
@@ -239,6 +255,8 @@ export type Tag = typeof tags.$inferSelect
 export type HouseNote = typeof houseNotes.$inferSelect
 export type BusinessNote = typeof businessNotes.$inferSelect
 export type Appointment = typeof appointments.$inferSelect
+export type HousePhoto = typeof housePhotos.$inferSelect
+export type BusinessPhoto = typeof businessPhotos.$inferSelect
 
 // HouseRow is the UI-facing type: location extracted to lat/lng by GET routes
 export type HouseRow = Omit<House, 'location'> & { lat: number; lng: number }

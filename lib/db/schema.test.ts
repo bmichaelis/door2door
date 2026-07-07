@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions, statuses, businesses, tags, houseTags, businessTags, houseNotes, businessNotes, appointments } from './schema'
+import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions, statuses, businesses, tags, houseTags, businessTags, houseNotes, businessNotes, appointments, housePhotos, businessPhotos } from './schema'
 
 describe('schema', () => {
   it('users table has required columns', () => {
@@ -90,5 +90,13 @@ describe('schema', () => {
     expect((appointments.scheduledAt as { name: string }).name).toBe('scheduled_at')
     expect(appointments.status).toBeDefined()
     expect(appointments.notes).toBeDefined()
+  })
+
+  it('photo tables have required columns', () => {
+    expect((housePhotos.houseId as { name: string }).name).toBe('house_id')
+    expect((housePhotos.r2Key as { name: string }).name).toBe('r2_key')
+    expect((housePhotos.userId as { name: string }).name).toBe('user_id')
+    expect((businessPhotos.businessId as { name: string }).name).toBe('business_id')
+    expect((businessPhotos.r2Key as { name: string }).name).toBe('r2_key')
   })
 })
