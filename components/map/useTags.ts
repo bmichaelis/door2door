@@ -18,10 +18,12 @@ export function useTags(
     setTags([])
     setError(null)
     if (!entityId) return
-    fetch(`/api/${endpoint}?${entityKey}=${entityId}`)
+    const controller = new AbortController()
+    fetch(`/api/${endpoint}?${entityKey}=${entityId}`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(setTags)
       .catch(() => {})
+    return () => controller.abort()
   }, [endpoint, entityKey, entityId])
 
   const attach = useCallback(async (name: string) => {

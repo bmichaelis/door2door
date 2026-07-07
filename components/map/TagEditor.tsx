@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { XIcon, PlusIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import type { TagRef } from './useTags'
@@ -17,6 +17,9 @@ export function TagEditor({ tags, onAttach, onRemove }: Props) {
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const tagsRef = useRef(tags)
+  useEffect(() => { tagsRef.current = tags }, [tags])
+  useEffect(() => () => clearTimeout(debounceRef.current), [])
 
   function handleInputChange(value: string) {
     setInput(value)
@@ -26,7 +29,7 @@ export function TagEditor({ tags, onAttach, onRemove }: Props) {
       fetch(`/api/tags?q=${encodeURIComponent(value.trim())}`)
         .then(r => r.ok ? r.json() : Promise.reject())
         .then((rows: Suggestion[]) =>
-          setSuggestions(rows.filter(s => !tags.some(t => t.tagId === s.id))))
+          setSuggestions(rows.filter(s => !tagsRef.current.some(t => t.tagId === s.id))))
         .catch(() => {})
     }, 250)
   }
@@ -76,7 +79,7 @@ export function TagEditor({ tags, onAttach, onRemove }: Props) {
             onChange={e => handleInputChange(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter') { e.preventDefault(); submit(input) }
-              if (e.key === 'Escape') { setAdding(false); setInput(''); setSuggestions([]) }
+              if (e.key === 'Escape') { clearTimeout(debounceRef.current); setAdding(false); setInput(''); setSuggestions([]) }
             }}
           />
           {suggestions.length > 0 && (
