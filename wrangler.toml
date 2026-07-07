@@ -2,3 +2,7 @@ name = "door2door"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "door2door-photos"
