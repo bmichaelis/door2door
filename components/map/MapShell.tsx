@@ -248,6 +248,7 @@ export function MapShell({ currentUser }: Props) {
       <BusinessPanel
         business={selectedBusiness}
         statuses={statuses}
+        currentUser={currentUser}
         onBusinessUpdate={handleBusinessUpdate}
         onClose={() => setSelectedBusiness(null)}
       />
