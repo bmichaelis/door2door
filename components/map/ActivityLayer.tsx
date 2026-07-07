@@ -6,9 +6,10 @@ import type { ActivityPoint } from '@/lib/activity'
 type Props = {
   points: ActivityPoint[]
   palette: Map<string, string>
+  visible: boolean
 }
 
-export function ActivityLayer({ points, palette }: Props) {
+export function ActivityLayer({ points, palette, visible }: Props) {
   const geojson = useMemo<GeoJSON.FeatureCollection>(() => ({
     type: 'FeatureCollection',
     features: points.map((p, i) => ({
@@ -24,6 +25,7 @@ export function ActivityLayer({ points, palette }: Props) {
       <Layer
         id="activity-dots"
         type="circle"
+        layout={{ visibility: visible ? 'visible' : 'none' }}
         paint={{
           'circle-color': ['get', 'color'],
           'circle-radius': 5,

@@ -222,18 +222,26 @@ export function MapShell({ currentUser }: Props) {
         onViewportChange={handleViewportChange}
       />}
       <div className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between gap-3 px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-        {layers.activity && isManager && activityPoints.length > 0 && (
-          <div className="flex max-w-[50%] flex-wrap items-center gap-2 rounded-full border bg-background/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur-sm">
-            {[...activityPalette.entries()].map(([userId, color]) => (
-              <span key={userId} className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                {activityPoints.find(p => p.userId === userId)?.repName ?? 'Unknown'}
-              </span>
-            ))}
-          </div>
-        )}
-        {/* Map style toggle — bottom left */}
-        <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
+        {/* Legend and style toggle — bottom left */}
+        <div className="flex flex-col items-start gap-2">
+          {layers.activity && isManager && (
+            activityPoints.length > 0 ? (
+              <div className="flex max-w-[50%] flex-wrap items-center gap-2 rounded-full border bg-background/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur-sm">
+                {[...activityPalette.entries()].map(([userId, color]) => (
+                  <span key={userId} className="inline-flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                    {activityPoints.find(p => p.userId === userId)?.repName ?? 'Unknown'}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-full border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur-sm">
+                No activity today
+              </div>
+            )
+          )}
+          <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
+        </div>
         {/* Layer toggle + search — bottom right */}
         <div className="flex items-center gap-2">
           <button

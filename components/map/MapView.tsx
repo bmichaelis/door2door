@@ -94,7 +94,7 @@ export default function MapView({
     >
       <NavigationControl position="top-right" />
       <NeighborhoodLayer neighborhoods={neighborhoods} currentUserId={currentUserId} />
-      {layers.activity && <ActivityLayer points={activityPoints} palette={activityPalette} />}
+      <ActivityLayer points={activityPoints} palette={activityPalette} visible={layers.activity} />
       {layers.homes && <HousePins houses={houses} statusColors={statusColors} onHouseClick={onHouseClick} selectedHouseId={selectedHouseId} />}
       {layers.businesses && <BusinessPins businesses={businesses} statusColors={statusColors} />}
     </Map>
