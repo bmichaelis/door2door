@@ -15,6 +15,7 @@ import { TagEditor } from './TagEditor'
 import { NotesSection } from './NotesSection'
 import { useTags } from './useTags'
 import { useNotes } from './useNotes'
+import { AppointmentForm } from '@/components/appointments/AppointmentForm'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; spouseName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
@@ -31,7 +32,7 @@ type Props = {
   onHouseChange?: (house: HouseRow) => void
 }
 
-type View = 'detail' | 'log-visit' | 'new-household'
+type View = 'detail' | 'log-visit' | 'new-household' | 'book-appointment'
 
 const OUTCOME_STYLES: Record<string, string> = {
   sold: 'bg-green-100 text-green-800',
@@ -173,6 +174,21 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
     }
   }
 
+  async function handleBookAppointment(data: { scheduledAt: string; notes?: string }) {
+    if (!house) return
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ houseId: house.id, ...data }),
+      })
+      if (!res.ok) throw new Error('booking failed')
+      setView('detail')
+    } catch {
+      setError('Failed to book appointment. Please try again.')
+    }
+  }
+
   async function handleFlagToggle(field: 'noSolicitingSign' | 'doNotKnock') {
     if (!house) return
     if (!window.confirm('Are you sure you want to toggle this flag? This will warn all reps.')) return
@@ -209,6 +225,7 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
   const viewTitle =
     view === 'log-visit' ? 'Log Visit' :
     view === 'new-household' ? 'New Family Moved In' :
+    view === 'book-appointment' ? 'Book Appointment' :
     null
 
   return (
@@ -310,6 +327,9 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
                 <Button variant="outline" onClick={() => setView('new-household')}>
                   New Family Moved In
                 </Button>
+                <Button variant="outline" onClick={() => setView('book-appointment')}>
+                  Book Appointment
+                </Button>
                 {currentUser.role === 'rep' && (
                   <Button size="sm" variant="outline" onClick={() => handleFlagToggle('noSolicitingSign')}>
                     {house?.noSolicitingSign ? 'Clear No Soliciting' : 'No Soliciting Sign'}
@@ -386,6 +406,13 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
             <HouseholdForm
               houseId={house.id}
               onSubmit={handleNewHousehold}
+              onCancel={() => setView('detail')}
+            />
+          )}
+
+          {view === 'book-appointment' && house && (
+            <AppointmentForm
+              onSubmit={handleBookAppointment}
               onCancel={() => setView('detail')}
             />
           )}
