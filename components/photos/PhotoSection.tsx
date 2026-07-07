@@ -18,6 +18,8 @@ export function PhotoSection({ entity, entityId, currentUser }: Props) {
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const entityKey = entity === 'house' ? 'houseId' : 'businessId'
+  const entityRef = useRef(entityId)
+  useEffect(() => { entityRef.current = entityId }, [entityId])
 
   useEffect(() => {
     setPhotos([])
@@ -44,14 +46,20 @@ export function PhotoSection({ entity, entityId, currentUser }: Props) {
         headers: { 'Content-Type': 'image/jpeg' },
         body: blob,
       })
-      if (!res.ok) throw new Error('upload failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? 'upload failed')
+      }
       const { id } = await res.json()
+      if (entityRef.current !== entityId) return
       setPhotos(prev => [
         { id, userId: currentUser.id, createdAt: new Date().toISOString(), authorName: 'You' },
         ...prev,
       ])
-    } catch {
-      setError('Failed to upload photo. Please try again.')
+    } catch (e) {
+      if (entityRef.current !== entityId) return
+      const message = e instanceof Error && e.message !== 'upload failed' ? e.message : 'Failed to upload photo. Please try again.'
+      setError(message)
     } finally {
       setUploading(false)
     }
@@ -66,6 +74,7 @@ export function PhotoSection({ entity, entityId, currentUser }: Props) {
       const res = await fetch(photoUrl(entity, id), { method: 'DELETE' })
       if (!res.ok) throw new Error('delete failed')
     } catch {
+      if (entityRef.current !== entityId) return
       setPhotos(prev => [removed, ...prev])
       setError('Failed to delete photo. Please try again.')
     }

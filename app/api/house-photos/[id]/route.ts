@@ -26,6 +26,7 @@ export const GET = withErrorHandling(async (_req: NextRequest, { params }) => {
     headers: {
       'Content-Type': 'image/jpeg',
       'Cache-Control': 'private, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
     },
   })
 })
