@@ -5,17 +5,21 @@ import { MAPBOX_TOKEN } from '@/lib/mapbox'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { HousePins } from './HousePins'
 import { BusinessPins, type BusinessRow } from './BusinessPins'
+import { ActivityLayer } from './ActivityLayer'
 import { useState, useEffect, useRef } from 'react'
 import type { HouseRow, Neighborhood } from '@/lib/db/schema'
+import type { ActivityPoint } from '@/lib/activity'
 import { MAP_STYLE_URLS, type MapStyle } from './MapStyleToggle'
 
-export type LayerVisibility = { homes: boolean; businesses: boolean }
+export type LayerVisibility = { homes: boolean; businesses: boolean; activity: boolean }
 export type ViewportBounds = { west: number; south: number; east: number; north: number }
 
 type Props = {
   neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon; houseCount: number })[]
   houses: HouseRow[]
   businesses: BusinessRow[]
+  activityPoints: ActivityPoint[]
+  activityPalette: Map<string, string>
   layers: LayerVisibility
   mapStyle: MapStyle
   statusColors: Record<string, string>
@@ -30,7 +34,7 @@ type Props = {
 }
 
 export default function MapView({
-  neighborhoods, houses, businesses, layers, mapStyle, statusColors, currentUserId,
+  neighborhoods, houses, businesses, activityPoints, activityPalette, layers, mapStyle, statusColors, currentUserId,
   initialCenter, targetLocation, selectedHouseId,
   onHouseClick, onBusinessClick, onMapClick, onViewportChange,
 }: Props) {
@@ -90,6 +94,7 @@ export default function MapView({
     >
       <NavigationControl position="top-right" />
       <NeighborhoodLayer neighborhoods={neighborhoods} currentUserId={currentUserId} />
+      <ActivityLayer points={activityPoints} palette={activityPalette} visible={layers.activity} />
       {layers.homes && <HousePins houses={houses} statusColors={statusColors} onHouseClick={onHouseClick} selectedHouseId={selectedHouseId} />}
       {layers.businesses && <BusinessPins businesses={businesses} statusColors={statusColors} />}
     </Map>
