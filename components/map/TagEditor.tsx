@@ -17,6 +17,7 @@ export function TagEditor({ tags, onAttach, onRemove }: Props) {
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const seqRef = useRef(0)
   const tagsRef = useRef(tags)
   useEffect(() => { tagsRef.current = tags }, [tags])
   useEffect(() => () => clearTimeout(debounceRef.current), [])
@@ -26,10 +27,13 @@ export function TagEditor({ tags, onAttach, onRemove }: Props) {
     clearTimeout(debounceRef.current)
     if (!value.trim()) { setSuggestions([]); return }
     debounceRef.current = setTimeout(() => {
+      const seq = ++seqRef.current
       fetch(`/api/tags?q=${encodeURIComponent(value.trim())}`)
         .then(r => r.ok ? r.json() : Promise.reject())
-        .then((rows: Suggestion[]) =>
-          setSuggestions(rows.filter(s => !tagsRef.current.some(t => t.tagId === s.id))))
+        .then((rows: Suggestion[]) => {
+          if (seq !== seqRef.current) return
+          setSuggestions(rows.filter(s => !tagsRef.current.some(t => t.tagId === s.id)))
+        })
         .catch(() => {})
     }, 250)
   }

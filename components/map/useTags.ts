@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { normalizeTagName } from '@/lib/tags'
 
 export type TagRef = { tagId: string; name: string }
 
@@ -14,21 +15,24 @@ export function useTags(
   const [tags, setTags] = useState<TagRef[]>([])
   const [error, setError] = useState<string | null>(null)
 
+  const entityRef = useRef(entityId)
+  useEffect(() => { entityRef.current = entityId }, [entityId])
+
   useEffect(() => {
     setTags([])
     setError(null)
     if (!entityId) return
     const controller = new AbortController()
     fetch(`/api/${endpoint}?${entityKey}=${entityId}`, { signal: controller.signal })
-      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('load failed')))
       .then(setTags)
-      .catch(() => {})
+      .catch(e => { if ((e as Error)?.name !== 'AbortError') setError('Failed to load tags.') })
     return () => controller.abort()
   }, [endpoint, entityKey, entityId])
 
   const attach = useCallback(async (name: string) => {
     if (!entityId) return
-    const trimmed = name.trim()
+    const trimmed = normalizeTagName(name)
     if (!trimmed) return
     if (tags.some(t => t.name.toLowerCase() === trimmed.toLowerCase())) return
     const tempId = `pending:${trimmed}`
@@ -42,8 +46,13 @@ export function useTags(
       })
       if (!res.ok) throw new Error('attach failed')
       const saved: TagRef = await res.json()
-      setTags(prev => prev.map(t => t.tagId === tempId ? saved : t))
+      if (entityRef.current !== entityId) return
+      setTags(prev => {
+        if (prev.some(t => t.tagId === saved.tagId)) return prev.filter(t => t.tagId !== tempId)
+        return prev.map(t => t.tagId === tempId ? saved : t)
+      })
     } catch {
+      if (entityRef.current !== entityId) return
       setTags(prev => prev.filter(t => t.tagId !== tempId))
       setError('Failed to add tag. Please try again.')
     }
@@ -59,6 +68,7 @@ export function useTags(
       const res = await fetch(`/api/${endpoint}?${entityKey}=${entityId}&tagId=${tagId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('remove failed')
     } catch {
+      if (entityRef.current !== entityId) return
       setTags(prev => [...prev, removed])
       setError('Failed to remove tag. Please try again.')
     }

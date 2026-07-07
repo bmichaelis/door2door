@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export type NoteRow = {
   id: string
@@ -20,15 +20,18 @@ export function useNotes(
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const entityRef = useRef(entityId)
+  useEffect(() => { entityRef.current = entityId }, [entityId])
+
   useEffect(() => {
     setNotes([])
     setError(null)
     if (!entityId) return
     const controller = new AbortController()
     fetch(`/api/${endpoint}?${entityKey}=${entityId}`, { signal: controller.signal })
-      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('load failed')))
       .then(setNotes)
-      .catch(() => {})
+      .catch(e => { if ((e as Error)?.name !== 'AbortError') setError('Failed to load notes.') })
     return () => controller.abort()
   }, [endpoint, entityKey, entityId])
 
@@ -44,8 +47,10 @@ export function useNotes(
       })
       if (!res.ok) throw new Error('add failed')
       const note: NoteRow = await res.json()
+      if (entityRef.current !== entityId) return
       setNotes(prev => [note, ...prev])
     } catch {
+      if (entityRef.current !== entityId) return
       setError('Failed to add note. Please try again.')
     } finally {
       setBusy(false)
@@ -61,10 +66,11 @@ export function useNotes(
       const res = await fetch(`/api/${endpoint}/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('delete failed')
     } catch {
+      if (entityRef.current !== entityId) return
       setNotes(prev => [removed, ...prev])
       setError('Failed to delete note. Please try again.')
     }
-  }, [endpoint, notes])
+  }, [endpoint, entityId, notes])
 
   return { notes, add, removeNote, error, busy }
 }
