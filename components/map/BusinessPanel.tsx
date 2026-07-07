@@ -14,6 +14,7 @@ import { TagEditor } from './TagEditor'
 import { NotesSection } from './NotesSection'
 import { useTags } from './useTags'
 import { useNotes } from './useNotes'
+import { AppointmentForm } from '@/components/appointments/AppointmentForm'
 
 type Visit = {
   id: string
@@ -75,11 +76,12 @@ const OUTCOME_STYLES: Record<string, string> = {
 }
 
 export function BusinessPanel({ business, statuses, currentUser, onClose, onBusinessUpdate }: Props) {
-  const [view, setView] = useState<'detail' | 'log-visit'>('detail')
+  const [view, setView] = useState<'detail' | 'log-visit' | 'book-appointment'>('detail')
   const [visits, setVisits] = useState<Visit[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [statusError, setStatusError] = useState<string | null>(null)
   const [statusUpdating, setStatusUpdating] = useState(false)
+  const [bookError, setBookError] = useState<string | null>(null)
 
   const { tags, attach: attachTag, remove: removeTag, error: tagError } = useTags('business-tags', 'businessId', business?.id ?? null)
   const { notes: bizNotes, add: addNote, removeNote, error: noteError, busy: noteBusy } = useNotes('business-notes', 'businessId', business?.id ?? null)
@@ -97,6 +99,7 @@ export function BusinessPanel({ business, statuses, currentUser, onClose, onBusi
     setView('detail')
     setVisits([])
     setStatusError(null)
+    setBookError(null)
     fetch(`/api/business-visits?businessId=${business.id}`)
       .then(r => r.json())
       .then(setVisits)
@@ -133,6 +136,22 @@ export function BusinessPanel({ business, statuses, currentUser, onClose, onBusi
       setStatusError('Failed to update status. Please try again.')
     } finally {
       setStatusUpdating(false)
+    }
+  }
+
+  async function handleBookAppointment(data: { scheduledAt: string; notes?: string }) {
+    if (!business) return
+    setBookError(null)
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessId: business.id, ...data }),
+      })
+      if (!res.ok) throw new Error('booking failed')
+      setView('detail')
+    } catch {
+      setBookError('Failed to book appointment. Please try again.')
     }
   }
 
@@ -225,6 +244,9 @@ export function BusinessPanel({ business, statuses, currentUser, onClose, onBusi
               <Button className="w-full" onClick={() => setView('log-visit')}>
                 Log Visit
               </Button>
+              <Button variant="outline" className="w-full" onClick={() => setView('book-appointment')}>
+                Book Appointment
+              </Button>
 
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</p>
@@ -254,6 +276,13 @@ export function BusinessPanel({ business, statuses, currentUser, onClose, onBusi
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {view === 'book-appointment' && (
+            <div className="space-y-3">
+              {bookError && <p className="text-sm text-destructive">{bookError}</p>}
+              <AppointmentForm onSubmit={handleBookAppointment} onCancel={() => setView('detail')} />
             </div>
           )}
 
