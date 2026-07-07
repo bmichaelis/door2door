@@ -32,7 +32,7 @@ the PR).
 - **8 MB request cap** post-downscale (defense in depth; normal uploads are
   far smaller) → 413.
 
-## User setup (one step, before or after merge — feature 503s gracefully until done)
+## User setup (one step, **BEFORE merging** — Cloudflare validates Pages bindings at deploy time, so a binding to a nonexistent bucket can hard-fail every deploy, not just this feature)
 
 ```
 npx wrangler r2 bucket create door2door-photos
