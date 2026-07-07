@@ -3,21 +3,44 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { neighborhoods } from '@/lib/db/schema'
-import { requireRole } from '@/lib/permissions'
+import { requireRole, canManageTeam } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { sql, eq } from 'drizzle-orm'
 
 export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   const session = await auth()
-  requireRole(session?.user?.role, 'admin')
+  requireRole(session?.user?.role, 'admin', 'manager')
   const { id } = await params
   const body = await req.json()
+  const role = session!.user!.role
 
-  // Update scalar fields via typed Drizzle update (parameterized, no injection risk)
+  const [existing] = await db.select({ teamId: neighborhoods.teamId }).from(neighborhoods).where(eq(neighborhoods.id, id))
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Pre-existing fields stay admin-only
+  const hasAdminFields = body.name !== undefined || body.city !== undefined || body.teamId !== undefined || body.boundary !== undefined
+  if (hasAdminFields && role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // Assignment fields: admin, or the manager of this neighborhood's team
+  const hasAssignmentFields = 'assignedUserId' in body || 'territoryStatus' in body
+  if (hasAssignmentFields && role !== 'admin' &&
+      !canManageTeam({ role: role!, teamId: session!.user!.teamId ?? null }, existing.teamId ?? '')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const scalarUpdates: Partial<typeof neighborhoods.$inferInsert> = {}
   if (body.name !== undefined) scalarUpdates.name = body.name
   if (body.city !== undefined) scalarUpdates.city = body.city ?? null
   if (body.teamId !== undefined) scalarUpdates.teamId = body.teamId ?? null
+  if ('assignedUserId' in body) scalarUpdates.assignedUserId = body.assignedUserId
+  if ('territoryStatus' in body) {
+    if (body.territoryStatus !== null && !['upcoming', 'active', 'completed'].includes(body.territoryStatus)) {
+      return NextResponse.json({ error: 'territoryStatus must be upcoming, active, completed, or null' }, { status: 400 })
+    }
+    scalarUpdates.territoryStatus = body.territoryStatus
+  }
 
   if (Object.keys(scalarUpdates).length > 0) {
     await db.update(neighborhoods).set(scalarUpdates).where(eq(neighborhoods.id, id))
@@ -35,10 +58,11 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
 
   const rows = await db.execute(
     sql`SELECT id, name, team_id, created_at,
+        assigned_user_id as "assignedUserId",
+        territory_status as "territoryStatus",
         ST_AsGeoJSON(boundary)::json as boundary
         FROM neighborhoods WHERE id = ${id}`
   )
-  if (!rows.rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(rows.rows[0])
 })
 

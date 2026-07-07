@@ -95,6 +95,8 @@ export const neighborhoods = pgTable('neighborhoods', {
   city: text('city'),
   teamId: uuid('team_id').references(() => teams.id),
   boundary: geometry('boundary'),
+  assignedUserId: uuid('assigned_user_id').references(() => users.id, { onDelete: 'set null' }),
+  territoryStatus: text('territory_status', { enum: ['upcoming', 'active', 'completed'] }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
