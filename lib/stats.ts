@@ -107,8 +107,10 @@ export async function getLeaderboard(teamId: string | null): Promise<Leaderboard
     FROM users u
     LEFT JOIN (
       SELECT user_id, contact_status, sale_outcome, created_at FROM visits
+      WHERE created_at >= LEAST(date_trunc('week', CURRENT_DATE), date_trunc('month', CURRENT_DATE))
       UNION ALL
       SELECT user_id, contact_status, sale_outcome, created_at FROM business_visits
+      WHERE created_at >= LEAST(date_trunc('week', CURRENT_DATE), date_trunc('month', CURRENT_DATE))
     ) v ON v.user_id = u.id
     WHERE u.role IS NOT NULL ${teamFilter}
     GROUP BY u.id, u.name

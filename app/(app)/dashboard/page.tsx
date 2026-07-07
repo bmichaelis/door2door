@@ -21,8 +21,10 @@ export default async function DashboardPage() {
   const { role, id: userId, teamId } = session.user
 
   if (role === 'rep') {
-    const stats = await getRepStats(userId)
-    const leaderboard = teamId ? await getLeaderboard(teamId) : null
+    const [stats, leaderboard] = await Promise.all([
+      getRepStats(userId),
+      teamId ? getLeaderboard(teamId) : null,
+    ])
     const { RepStats } = await import('@/components/dashboard/RepStats')
     return (
       <div>
@@ -32,8 +34,10 @@ export default async function DashboardPage() {
     )
   }
   if (role === 'manager') {
-    const stats = await getManagerStats(teamId!)
-    const leaderboard = teamId ? await getLeaderboard(teamId) : null
+    const [stats, leaderboard] = await Promise.all([
+      getManagerStats(teamId!),
+      teamId ? getLeaderboard(teamId) : null,
+    ])
     const { ManagerStats } = await import('@/components/dashboard/ManagerStats')
     return (
       <div>
@@ -42,8 +46,7 @@ export default async function DashboardPage() {
       </div>
     )
   }
-  const stats = await getAdminStats()
-  const leaderboard = await getLeaderboard(null)
+  const [stats, leaderboard] = await Promise.all([getAdminStats(), getLeaderboard(null)])
   const { AdminStats } = await import('@/components/dashboard/AdminStats')
   return (
     <div>
