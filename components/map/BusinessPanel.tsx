@@ -10,6 +10,10 @@ import type { BusinessRow } from './BusinessPins'
 import { PhoneIcon, GlobeIcon, MapPinIcon } from 'lucide-react'
 import { StatusChips } from './StatusChips'
 import type { StatusOption } from '@/lib/statuses'
+import { TagEditor } from './TagEditor'
+import { NotesSection } from './NotesSection'
+import { useTags } from './useTags'
+import { useNotes } from './useNotes'
 
 type Visit = {
   id: string
@@ -25,6 +29,7 @@ type Product = { id: string; name: string }
 type Props = {
   business: BusinessRow | null
   statuses: StatusOption[]
+  currentUser: { id: string; role: string }
   onClose: () => void
   onBusinessUpdate?: (id: string, updates: Partial<BusinessRow>) => void
 }
@@ -69,12 +74,15 @@ const OUTCOME_STYLES: Record<string, string> = {
   not_sold: 'bg-red-100 text-red-800',
 }
 
-export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }: Props) {
+export function BusinessPanel({ business, statuses, currentUser, onClose, onBusinessUpdate }: Props) {
   const [view, setView] = useState<'detail' | 'log-visit'>('detail')
   const [visits, setVisits] = useState<Visit[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [statusError, setStatusError] = useState<string | null>(null)
   const [statusUpdating, setStatusUpdating] = useState(false)
+
+  const { tags, attach: attachTag, remove: removeTag, error: tagError } = useTags('business-tags', 'businessId', business?.id ?? null)
+  const { notes: bizNotes, add: addNote, removeNote, error: noteError, busy: noteBusy } = useNotes('business-notes', 'businessId', business?.id ?? null)
 
   // Visit form state
   const [contactStatus, setContactStatus] = useState<'answered' | 'not_home' | 'refused'>('answered')
@@ -208,9 +216,21 @@ export function BusinessPanel({ business, statuses, onClose, onBusinessUpdate }:
                 <StatusChips statuses={statuses} value={business?.statusId ?? null} onSelect={handleStatusSelect} disabled={statusUpdating} />
               </div>
 
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tags</p>
+                {tagError && <p className="mb-2 text-sm text-destructive">{tagError}</p>}
+                <TagEditor tags={tags} onAttach={attachTag} onRemove={removeTag} />
+              </div>
+
               <Button className="w-full" onClick={() => setView('log-visit')}>
                 Log Visit
               </Button>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</p>
+                {noteError && <p className="mb-2 text-sm text-destructive">{noteError}</p>}
+                <NotesSection notes={bizNotes} currentUser={currentUser} onAdd={addNote} onDelete={removeNote} busy={noteBusy} />
+              </div>
 
               {/* Recent visits */}
               {visits.length > 0 && (

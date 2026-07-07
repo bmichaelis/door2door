@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions, statuses, businesses } from './schema'
+import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions, statuses, businesses, tags, houseTags, businessTags, houseNotes, businessNotes } from './schema'
 
 describe('schema', () => {
   it('users table has required columns', () => {
@@ -59,5 +59,27 @@ describe('schema', () => {
     expect((houses.statusId as { name: string }).name).toBe('status_id')
     expect(businesses.statusId).toBeDefined()
     expect((businesses.statusId as { name: string }).name).toBe('status_id')
+  })
+
+  it('tags table has required columns', () => {
+    expect(tags.id).toBeDefined()
+    expect(tags.name).toBeDefined()
+    expect((tags.createdAt as { name: string }).name).toBe('created_at')
+  })
+
+  it('tag join tables have required columns', () => {
+    expect((houseTags.houseId as { name: string }).name).toBe('house_id')
+    expect((houseTags.tagId as { name: string }).name).toBe('tag_id')
+    expect((houseTags.userId as { name: string }).name).toBe('user_id')
+    expect((businessTags.businessId as { name: string }).name).toBe('business_id')
+    expect((businessTags.tagId as { name: string }).name).toBe('tag_id')
+  })
+
+  it('note tables have required columns', () => {
+    expect((houseNotes.houseId as { name: string }).name).toBe('house_id')
+    expect(houseNotes.body).toBeDefined()
+    expect((houseNotes.userId as { name: string }).name).toBe('user_id')
+    expect((businessNotes.businessId as { name: string }).name).toBe('business_id')
+    expect(businessNotes.body).toBeDefined()
   })
 })

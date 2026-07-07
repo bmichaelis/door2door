@@ -172,6 +172,46 @@ export const businessVisits = pgTable('business_visits', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const tags = pgTable('tags', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(), // display casing preserved; uniqueness on lower(name) enforced by migration index
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const houseTags = pgTable('house_tags', {
+  houseId: uuid('house_id').notNull().references(() => houses.id, { onDelete: 'cascade' }),
+  tagId: uuid('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.houseId, table.tagId] }),
+}))
+
+export const businessTags = pgTable('business_tags', {
+  businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+  tagId: uuid('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.businessId, table.tagId] }),
+}))
+
+export const houseNotes = pgTable('house_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  houseId: uuid('house_id').notNull().references(() => houses.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  body: text('body').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const businessNotes = pgTable('business_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  body: text('body').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // Type exports
 export type User = typeof users.$inferSelect
 export type Team = typeof teams.$inferSelect
@@ -183,6 +223,9 @@ export type Household = typeof households.$inferSelect
 export type Visit = typeof visits.$inferSelect
 export type Business = typeof businesses.$inferSelect
 export type BusinessVisit = typeof businessVisits.$inferSelect
+export type Tag = typeof tags.$inferSelect
+export type HouseNote = typeof houseNotes.$inferSelect
+export type BusinessNote = typeof businessNotes.$inferSelect
 
 // HouseRow is the UI-facing type: location extracted to lat/lng by GET routes
 export type HouseRow = Omit<House, 'location'> & { lat: number; lng: number }

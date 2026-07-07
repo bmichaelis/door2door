@@ -11,6 +11,10 @@ import type { HouseRow } from '@/lib/db/schema'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { StatusChips } from './StatusChips'
 import type { StatusOption } from '@/lib/statuses'
+import { TagEditor } from './TagEditor'
+import { NotesSection } from './NotesSection'
+import { useTags } from './useTags'
+import { useNotes } from './useNotes'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; spouseName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
@@ -18,7 +22,7 @@ type Product = { id: string; name: string }
 
 type Props = {
   house: HouseRow | null
-  userRole: string
+  currentUser: { id: string; role: string }
   statuses: StatusOption[]
   onClose: () => void
   onHouseUpdate?: (id: string, updates: Partial<HouseRow>) => void
@@ -41,7 +45,7 @@ const CONTACT_LABEL: Record<string, string> = {
   refused: 'Refused',
 }
 
-export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, prevHouse, nextHouse, onHouseChange }: Props) {
+export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdate, prevHouse, nextHouse, onHouseChange }: Props) {
   const [view, setView] = useState<View>('detail')
   const [households, setHouseholds] = useState<Household[]>([])
   const [visits, setVisits] = useState<Visit[]>([])
@@ -50,6 +54,9 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
   const [error, setError] = useState<string | null>(null)
   const [visitHouseholdId, setVisitHouseholdId] = useState<string | null>(null)
   const [statusUpdating, setStatusUpdating] = useState(false)
+
+  const { tags, attach: attachTag, remove: removeTag, error: tagError } = useTags('house-tags', 'houseId', house?.id ?? null)
+  const { notes, add: addNote, removeNote, error: noteError, busy: noteBusy } = useNotes('house-notes', 'houseId', house?.id ?? null)
 
   const activeHousehold = households.find(h => h.active)
 
@@ -288,6 +295,13 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
                 <StatusChips statuses={statuses} value={house?.statusId ?? null} onSelect={handleStatusSelect} disabled={statusUpdating} />
               </div>
 
+              {/* Tags */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tags</p>
+                {tagError && <p className="mb-2 text-sm text-destructive">{tagError}</p>}
+                <TagEditor tags={tags} onAttach={attachTag} onRemove={removeTag} />
+              </div>
+
               {/* Actions */}
               <div className="flex flex-wrap gap-2">
                 <Button onClick={handleLogVisitClick} disabled={loading}>
@@ -296,16 +310,23 @@ export function HousePanel({ house, userRole, statuses, onClose, onHouseUpdate, 
                 <Button variant="outline" onClick={() => setView('new-household')}>
                   New Family Moved In
                 </Button>
-                {userRole === 'rep' && (
+                {currentUser.role === 'rep' && (
                   <Button size="sm" variant="outline" onClick={() => handleFlagToggle('noSolicitingSign')}>
                     {house?.noSolicitingSign ? 'Clear No Soliciting' : 'No Soliciting Sign'}
                   </Button>
                 )}
-                {(userRole === 'admin' || userRole === 'manager') && (
+                {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
                   <Button size="sm" variant="outline" onClick={() => handleFlagToggle('doNotKnock')}>
                     {house?.doNotKnock ? 'Clear Do Not Knock' : 'Mark Do Not Knock'}
                   </Button>
                 )}
+              </div>
+
+              {/* Notes */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</p>
+                {noteError && <p className="mb-2 text-sm text-destructive">{noteError}</p>}
+                <NotesSection notes={notes} currentUser={currentUser} onAdd={addNote} onDelete={removeNote} busy={noteBusy} />
               </div>
 
               {/* Visit history */}
