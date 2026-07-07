@@ -1,7 +1,18 @@
 export const runtime = 'edge'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { getRepStats, getManagerStats, getAdminStats } from '@/lib/stats'
+import { getRepStats, getManagerStats, getAdminStats, getLeaderboard, type LeaderboardRow } from '@/lib/stats'
+import { Leaderboard } from '@/components/dashboard/Leaderboard'
+
+function LeaderboardSection({ rows, userId }: { rows: LeaderboardRow[] | null; userId: string }) {
+  if (!rows) return null
+  return (
+    <div className="max-w-lg px-6 pb-6">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Leaderboard</h2>
+      <Leaderboard rows={rows} currentUserId={userId} />
+    </div>
+  )
+}
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -11,15 +22,33 @@ export default async function DashboardPage() {
 
   if (role === 'rep') {
     const stats = await getRepStats(userId)
+    const leaderboard = teamId ? await getLeaderboard(teamId) : null
     const { RepStats } = await import('@/components/dashboard/RepStats')
-    return <RepStats stats={stats} />
+    return (
+      <div>
+        <RepStats stats={stats} />
+        <LeaderboardSection rows={leaderboard} userId={userId} />
+      </div>
+    )
   }
   if (role === 'manager') {
     const stats = await getManagerStats(teamId!)
+    const leaderboard = teamId ? await getLeaderboard(teamId) : null
     const { ManagerStats } = await import('@/components/dashboard/ManagerStats')
-    return <ManagerStats stats={stats} />
+    return (
+      <div>
+        <ManagerStats stats={stats} />
+        <LeaderboardSection rows={leaderboard} userId={userId} />
+      </div>
+    )
   }
   const stats = await getAdminStats()
+  const leaderboard = await getLeaderboard(null)
   const { AdminStats } = await import('@/components/dashboard/AdminStats')
-  return <AdminStats stats={stats} />
+  return (
+    <div>
+      <AdminStats stats={stats} />
+      <LeaderboardSection rows={leaderboard} userId={userId} />
+    </div>
+  )
 }
