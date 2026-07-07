@@ -176,6 +176,7 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
 
   async function handleBookAppointment(data: { scheduledAt: string; notes?: string }) {
     if (!house) return
+    setError(null)
     try {
       const res = await fetch('/api/appointments', {
         method: 'POST',
