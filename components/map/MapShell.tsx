@@ -7,6 +7,7 @@ import { HouseForm, type HouseFormData } from '@/components/forms/HouseForm'
 import type { HouseRow, Neighborhood } from '@/lib/db/schema'
 import { parseHouseNumber } from '@/lib/houses'
 import { type StatusOption } from '@/lib/statuses'
+import { repPalette, type ActivityPoint } from '@/lib/activity'
 import type { BusinessRow } from './BusinessPins'
 import type { LayerVisibility, ViewportBounds } from './MapView'
 import MapStyleToggle, { type MapStyle } from './MapStyleToggle'
@@ -30,7 +31,7 @@ export function MapShell({ currentUser }: Props) {
   const [businesses, setBusinesses] = useState<BusinessRow[]>([])
   const [statuses, setStatuses] = useState<StatusOption[]>([])
   const [dataLoading, setDataLoading] = useState(true)
-  const [layers, setLayers] = useState<LayerVisibility>({ homes: true, businesses: true })
+  const [layers, setLayers] = useState<LayerVisibility>({ homes: true, businesses: true, activity: false })
   const [mapStyle, setMapStyle] = useState<MapStyle>('streets')
   const [lastCenter, setLastCenter] = useState<{ lat: number; lng: number } | undefined>()
   const [locationReady, setLocationReady] = useState(false)
@@ -112,6 +113,21 @@ export function MapShell({ currentUser }: Props) {
     }
   }, [])
 
+  const [activityPoints, setActivityPoints] = useState<ActivityPoint[]>([])
+  const isManager = currentUser.role !== 'rep'
+
+  useEffect(() => {
+    if (!layers.activity || !isManager) return
+    const controller = new AbortController()
+    fetch('/api/activity', { signal: controller.signal })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('load failed')))
+      .then(setActivityPoints)
+      .catch(() => {})
+    return () => controller.abort()
+  }, [layers.activity, isManager])
+
+  const activityPalette = useMemo(() => repPalette(activityPoints), [activityPoints])
+
   const [searchOpen, setSearchOpen] = useState(false)
   const [targetLocation, setTargetLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessRow | null>(null)
@@ -186,6 +202,8 @@ export function MapShell({ currentUser }: Props) {
         neighborhoods={neighborhoods}
         houses={effectiveHouses}
         businesses={businesses}
+        activityPoints={activityPoints}
+        activityPalette={activityPalette}
         layers={layers}
         mapStyle={mapStyle}
         statusColors={statusColors}
@@ -204,6 +222,16 @@ export function MapShell({ currentUser }: Props) {
         onViewportChange={handleViewportChange}
       />}
       <div className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between gap-3 px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+        {layers.activity && isManager && activityPoints.length > 0 && (
+          <div className="flex max-w-[50%] flex-wrap items-center gap-2 rounded-full border bg-background/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur-sm">
+            {[...activityPalette.entries()].map(([userId, color]) => (
+              <span key={userId} className="inline-flex items-center gap-1">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                {activityPoints.find(p => p.userId === userId)?.repName ?? 'Unknown'}
+              </span>
+            ))}
+          </div>
+        )}
         {/* Map style toggle — bottom left */}
         <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
         {/* Layer toggle + search — bottom right */}
@@ -216,13 +244,13 @@ export function MapShell({ currentUser }: Props) {
             <SearchIcon className="h-4 w-4" />
           </button>
           <div className="flex rounded-full border bg-background/95 shadow-lg backdrop-blur-sm overflow-hidden text-sm font-medium">
-            {(['homes', 'businesses'] as const).map(key => (
+            {(isManager ? (['homes', 'businesses', 'activity'] as const) : (['homes', 'businesses'] as const)).map(key => (
               <button
                 key={key}
                 onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}
                 className={`px-4 py-2 transition-colors capitalize ${layers[key] ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                {key === 'homes' ? 'Homes' : 'Businesses'}
+                {key === 'homes' ? 'Homes' : key === 'businesses' ? 'Businesses' : 'Activity'}
               </button>
             ))}
           </div>
