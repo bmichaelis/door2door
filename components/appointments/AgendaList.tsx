@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { groupAgenda, type AgendaRow } from '@/lib/appointments'
 
@@ -12,6 +12,8 @@ type Props = {
 export function AgendaList({ initialRows, showRep, now }: Props) {
   const [rows, setRows] = useState(initialRows)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   async function setStatus(id: string, status: 'completed' | 'cancelled' | 'no_show') {
     const removed = rows.find(r => r.id === id)
@@ -30,6 +32,8 @@ export function AgendaList({ initialRows, showRep, now }: Props) {
       setError('Failed to update appointment. Please try again.')
     }
   }
+
+  if (!mounted) return null
 
   if (rows.length === 0 && !error) {
     return <p className="text-sm text-muted-foreground">No upcoming appointments.</p>

@@ -7,12 +7,13 @@ import type { AgendaRow, AgendaScope } from './appointments'
 export async function getAgenda(scope: AgendaScope): Promise<AgendaRow[]> {
   const repFilter =
     scope.role === 'rep' ? sql`AND a.user_id = ${scope.userId}` :
-    scope.role === 'manager' && scope.teamId ? sql`AND u.team_id = ${scope.teamId}` :
+    // A teamless manager matches no rows (NULL never equals) rather than seeing everything
+    scope.role === 'manager' ? sql`AND u.team_id = ${scope.teamId}` :
     sql``
   const rows = await db.execute(sql`
     SELECT
       a.id,
-      a.scheduled_at AS "scheduledAt",
+      to_char(a.scheduled_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS "scheduledAt",
       a.notes,
       a.status,
       u.name AS "repName",
