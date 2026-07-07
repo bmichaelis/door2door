@@ -19,6 +19,7 @@ type Props = {
   layers: LayerVisibility
   mapStyle: MapStyle
   statusColors: Record<string, string>
+  currentUserId: string
   initialCenter?: { lat: number; lng: number }
   targetLocation?: { lat: number; lng: number } | null
   selectedHouseId?: string | null
@@ -29,7 +30,7 @@ type Props = {
 }
 
 export default function MapView({
-  neighborhoods, houses, businesses, layers, mapStyle, statusColors,
+  neighborhoods, houses, businesses, layers, mapStyle, statusColors, currentUserId,
   initialCenter, targetLocation, selectedHouseId,
   onHouseClick, onBusinessClick, onMapClick, onViewportChange,
 }: Props) {
@@ -88,7 +89,7 @@ export default function MapView({
       }}
     >
       <NavigationControl position="top-right" />
-      <NeighborhoodLayer neighborhoods={neighborhoods} />
+      <NeighborhoodLayer neighborhoods={neighborhoods} currentUserId={currentUserId} />
       {layers.homes && <HousePins houses={houses} statusColors={statusColors} onHouseClick={onHouseClick} selectedHouseId={selectedHouseId} />}
       {layers.businesses && <BusinessPins businesses={businesses} statusColors={statusColors} />}
     </Map>
