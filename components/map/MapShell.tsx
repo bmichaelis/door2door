@@ -21,10 +21,10 @@ const HOUSE_ZOOM_THRESHOLD = 14
 type NeighborhoodWithCount = Neighborhood & { boundary: GeoJSON.Polygon; houseCount: number }
 
 type Props = {
-  userRole: string
+  currentUser: { id: string; role: string }
 }
 
-export function MapShell({ userRole }: Props) {
+export function MapShell({ currentUser }: Props) {
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodWithCount[]>([])
   const [houses, setHouses] = useState<HouseRow[]>([])
   const [businesses, setBusinesses] = useState<BusinessRow[]>([])
@@ -254,7 +254,7 @@ export function MapShell({ userRole }: Props) {
       <HousePanel
         house={selectedHouse}
         statuses={statuses}
-        userRole={userRole}
+        currentUser={currentUser}
         onClose={() => setSelectedHouse(null)}
         onHouseUpdate={handleHouseUpdate}
         prevHouse={adjacentHouses.prev}
