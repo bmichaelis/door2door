@@ -16,6 +16,7 @@ const ADMIN_ITEMS = [
   { href: '/admin/neighborhoods',  label: 'Neighborhoods', roles: ['admin'] },
   { href: '/admin/parcels',        label: 'Parcels',       roles: ['admin'] },
   { href: '/admin/statuses',       label: 'Statuses',      roles: ['admin'] },
+  { href: '/admin/tags',           label: 'Tags',          roles: ['admin'] },
 ]
 
 export function NavBar({ role }: Props) {
