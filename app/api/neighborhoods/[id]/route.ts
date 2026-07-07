@@ -2,10 +2,12 @@ export const runtime = 'edge'
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { neighborhoods } from '@/lib/db/schema'
+import { neighborhoods, users } from '@/lib/db/schema'
 import { requireRole, canManageTeam } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { sql, eq } from 'drizzle-orm'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   const session = await auth()
@@ -34,7 +36,22 @@ export const PATCH = withErrorHandling(async (req: NextRequest, { params }) => {
   if (body.name !== undefined) scalarUpdates.name = body.name
   if (body.city !== undefined) scalarUpdates.city = body.city ?? null
   if (body.teamId !== undefined) scalarUpdates.teamId = body.teamId ?? null
-  if ('assignedUserId' in body) scalarUpdates.assignedUserId = body.assignedUserId
+  if ('assignedUserId' in body) {
+    if (body.assignedUserId !== null) {
+      if (typeof body.assignedUserId !== 'string' || !UUID_RE.test(body.assignedUserId)) {
+        return NextResponse.json({ error: 'assignedUserId must be a user id or null' }, { status: 400 })
+      }
+      const [assignee] = await db.select({ role: users.role, teamId: users.teamId })
+        .from(users).where(eq(users.id, body.assignedUserId))
+      if (!assignee || assignee.role !== 'rep') {
+        return NextResponse.json({ error: 'assignedUserId must be a rep' }, { status: 400 })
+      }
+      if (role !== 'admin' && assignee.teamId !== existing.teamId) {
+        return NextResponse.json({ error: 'assignee must be on the neighborhood team' }, { status: 400 })
+      }
+    }
+    scalarUpdates.assignedUserId = body.assignedUserId
+  }
   if ('territoryStatus' in body) {
     if (body.territoryStatus !== null && !['upcoming', 'active', 'completed'].includes(body.territoryStatus)) {
       return NextResponse.json({ error: 'territoryStatus must be upcoming, active, completed, or null' }, { status: 400 })
