@@ -212,6 +212,18 @@ export const businessNotes = pgTable('business_notes', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const appointments = pgTable('appointments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  // Exactly one of houseId/businessId is set — enforced by a CHECK in the migration
+  houseId: uuid('house_id').references(() => houses.id, { onDelete: 'cascade' }),
+  businessId: uuid('business_id').references(() => businesses.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  scheduledAt: timestamp('scheduled_at').notNull(),
+  notes: text('notes'),
+  status: text('status', { enum: ['scheduled', 'completed', 'cancelled', 'no_show'] }).default('scheduled').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // Type exports
 export type User = typeof users.$inferSelect
 export type Team = typeof teams.$inferSelect
@@ -226,6 +238,7 @@ export type BusinessVisit = typeof businessVisits.$inferSelect
 export type Tag = typeof tags.$inferSelect
 export type HouseNote = typeof houseNotes.$inferSelect
 export type BusinessNote = typeof businessNotes.$inferSelect
+export type Appointment = typeof appointments.$inferSelect
 
 // HouseRow is the UI-facing type: location extracted to lat/lng by GET routes
 export type HouseRow = Omit<House, 'location'> & { lat: number; lng: number }

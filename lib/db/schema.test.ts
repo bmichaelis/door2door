@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions, statuses, businesses, tags, houseTags, businessTags, houseNotes, businessNotes } from './schema'
+import { users, teams, products, neighborhoods, houses, households, visits, accounts, sessions, statuses, businesses, tags, houseTags, businessTags, houseNotes, businessNotes, appointments } from './schema'
 
 describe('schema', () => {
   it('users table has required columns', () => {
@@ -81,5 +81,14 @@ describe('schema', () => {
     expect((houseNotes.userId as { name: string }).name).toBe('user_id')
     expect((businessNotes.businessId as { name: string }).name).toBe('business_id')
     expect(businessNotes.body).toBeDefined()
+  })
+
+  it('appointments table has required columns', () => {
+    expect((appointments.houseId as { name: string }).name).toBe('house_id')
+    expect((appointments.businessId as { name: string }).name).toBe('business_id')
+    expect((appointments.userId as { name: string }).name).toBe('user_id')
+    expect((appointments.scheduledAt as { name: string }).name).toBe('scheduled_at')
+    expect(appointments.status).toBeDefined()
+    expect(appointments.notes).toBeDefined()
   })
 })
