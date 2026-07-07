@@ -58,6 +58,7 @@ export function NavBar({ role }: Props) {
     <header className="border-b px-4 py-2 flex items-center justify-between gap-4">
       <nav className="flex items-center gap-1">
         {navLink('/map', 'Map')}
+        {navLink('/appointments', 'Appointments')}
         {navLink('/dashboard', 'Dashboard')}
 
         {adminItems.length > 0 && (
