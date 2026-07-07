@@ -78,3 +78,42 @@ export async function getAdminStats(): Promise<AdminStats> {
   `)
   return rows.rows as AdminStats
 }
+
+export type LeaderboardRow = {
+  id: string
+  name: string | null
+  doors_week: string
+  conversations_week: string
+  sales_week: string
+  doors_month: string
+  conversations_month: string
+  sales_month: string
+}
+
+// Ranked rep activity across house AND business visits. teamId null = all
+// reps (admin cross-team view). Reps with zero visits still appear —
+// COUNT(v.user_id) ignores the NULL rows a LEFT JOIN produces for them.
+export async function getLeaderboard(teamId: string | null): Promise<LeaderboardRow[]> {
+  const teamFilter = teamId ? sql`AND u.team_id = ${teamId}` : sql``
+  const rows = await db.execute(sql`
+    SELECT
+      u.id, u.name,
+      COUNT(v.user_id) FILTER (WHERE v.created_at >= date_trunc('week', CURRENT_DATE)) AS doors_week,
+      COUNT(v.user_id) FILTER (WHERE v.contact_status = 'answered' AND v.created_at >= date_trunc('week', CURRENT_DATE)) AS conversations_week,
+      COUNT(v.user_id) FILTER (WHERE v.sale_outcome = 'sold' AND v.created_at >= date_trunc('week', CURRENT_DATE)) AS sales_week,
+      COUNT(v.user_id) FILTER (WHERE v.created_at >= date_trunc('month', CURRENT_DATE)) AS doors_month,
+      COUNT(v.user_id) FILTER (WHERE v.contact_status = 'answered' AND v.created_at >= date_trunc('month', CURRENT_DATE)) AS conversations_month,
+      COUNT(v.user_id) FILTER (WHERE v.sale_outcome = 'sold' AND v.created_at >= date_trunc('month', CURRENT_DATE)) AS sales_month
+    FROM users u
+    LEFT JOIN (
+      SELECT user_id, contact_status, sale_outcome, created_at FROM visits
+      WHERE created_at >= LEAST(date_trunc('week', CURRENT_DATE), date_trunc('month', CURRENT_DATE))
+      UNION ALL
+      SELECT user_id, contact_status, sale_outcome, created_at FROM business_visits
+      WHERE created_at >= LEAST(date_trunc('week', CURRENT_DATE), date_trunc('month', CURRENT_DATE))
+    ) v ON v.user_id = u.id
+    WHERE u.role = 'rep' ${teamFilter}
+    GROUP BY u.id, u.name
+  `)
+  return rows.rows as LeaderboardRow[]
+}
