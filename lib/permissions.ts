@@ -26,3 +26,11 @@ export function canSetDoNotKnock(role: Role | null | undefined): boolean {
 export function isAdmin(role: Role | null | undefined): boolean {
   return role === 'admin'
 }
+
+export function canDeleteNote(
+  user: { id: string; role: string | null | undefined },
+  note: { userId: string | null }
+): boolean {
+  if (user.role === 'admin' || user.role === 'manager') return true
+  return note.userId !== null && note.userId === user.id
+}
