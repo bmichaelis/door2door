@@ -189,6 +189,7 @@ export function MapShell({ currentUser }: Props) {
         layers={layers}
         mapStyle={mapStyle}
         statusColors={statusColors}
+        currentUserId={currentUser.id}
         initialCenter={lastCenter}
         targetLocation={targetLocation}
         selectedHouseId={highlightedHouseId}

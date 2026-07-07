@@ -99,4 +99,9 @@ describe('schema', () => {
     expect((businessPhotos.businessId as { name: string }).name).toBe('business_id')
     expect((businessPhotos.r2Key as { name: string }).name).toBe('r2_key')
   })
+
+  it('neighborhoods have territory assignment columns', () => {
+    expect((neighborhoods.assignedUserId as { name: string }).name).toBe('assigned_user_id')
+    expect((neighborhoods.territoryStatus as { name: string }).name).toBe('territory_status')
+  })
 })

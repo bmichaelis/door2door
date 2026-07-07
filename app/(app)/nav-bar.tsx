@@ -59,6 +59,7 @@ export function NavBar({ role }: Props) {
       <nav className="flex items-center gap-1">
         {navLink('/map', 'Map')}
         {navLink('/appointments', 'Appointments')}
+        {(role === 'admin' || role === 'manager') && navLink('/territories', 'Territories')}
         {navLink('/dashboard', 'Dashboard')}
 
         {adminItems.length > 0 && (

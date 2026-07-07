@@ -13,11 +13,15 @@ export const GET = withErrorHandling(async () => {
   // and shrinks the payload ~6× (1428 polygons go from ~6 MB to ~1 MB).
   const rows = await db.execute(
     sql`SELECT n.id, n.name, n.team_id, n.created_at,
+        n.assigned_user_id as "assignedUserId",
+        n.territory_status as "territoryStatus",
+        u.name as "assignedUserName",
         ST_AsGeoJSON(ST_SimplifyPreserveTopology(n.boundary, 0.0001))::json as boundary,
         COUNT(h.id)::int as "houseCount"
         FROM neighborhoods n
+        LEFT JOIN users u ON u.id = n.assigned_user_id
         LEFT JOIN houses h ON h.neighborhood_id = n.id
-        GROUP BY n.id
+        GROUP BY n.id, u.name
         HAVING COUNT(h.id) > 0
         ORDER BY n.name`
   )

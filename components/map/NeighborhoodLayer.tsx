@@ -4,9 +4,10 @@ import type { Neighborhood } from '@/lib/db/schema'
 
 type Props = {
   neighborhoods: (Neighborhood & { boundary: GeoJSON.Polygon; houseCount: number })[]
+  currentUserId: string
 }
 
-export function NeighborhoodLayer({ neighborhoods }: Props) {
+export function NeighborhoodLayer({ neighborhoods, currentUserId }: Props) {
   const geojson: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',
     features: neighborhoods
@@ -15,16 +16,29 @@ export function NeighborhoodLayer({ neighborhoods }: Props) {
         type: 'Feature',
         id: n.id,
         geometry: n.boundary,
-        properties: { name: n.name, id: n.id, houseCount: n.houseCount ?? 0 },
+        properties: {
+          name: n.name,
+          id: n.id,
+          houseCount: n.houseCount ?? 0,
+          assignedUserId: n.assignedUserId ?? '',
+          territoryStatus: n.territoryStatus ?? '',
+        },
       })),
   }
+
+  const mineActive = ['all', ['==', ['get', 'assignedUserId'], currentUserId], ['==', ['get', 'territoryStatus'], 'active']]
+  const mineUpcoming = ['all', ['==', ['get', 'assignedUserId'], currentUserId], ['==', ['get', 'territoryStatus'], 'upcoming']]
+  const completed = ['==', ['get', 'territoryStatus'], 'completed']
 
   return (
     <Source id="neighborhoods" type="geojson" data={geojson}>
       <Layer
         id="neighborhood-fill"
         type="fill"
-        paint={{ 'fill-color': '#3b82f6', 'fill-opacity': 0.1 }}
+        paint={{
+          'fill-color': ['case', mineActive, '#3b82f6', mineUpcoming, '#8b5cf6', completed, '#9ca3af', '#3b82f6'] as never,
+          'fill-opacity': ['case', mineActive, 0.25, mineUpcoming, 0.18, completed, 0.05, 0.1] as never,
+        }}
       />
       <Layer
         id="neighborhood-outline"
