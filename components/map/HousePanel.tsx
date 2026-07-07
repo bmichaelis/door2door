@@ -16,6 +16,7 @@ import { NotesSection } from './NotesSection'
 import { useTags } from './useTags'
 import { useNotes } from './useNotes'
 import { AppointmentForm } from '@/components/appointments/AppointmentForm'
+import { PhotoSection } from '@/components/photos/PhotoSection'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; spouseName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
@@ -348,6 +349,12 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</p>
                 {noteError && <p className="mb-2 text-sm text-destructive">{noteError}</p>}
                 <NotesSection notes={notes} currentUser={currentUser} onAdd={addNote} onDelete={removeNote} busy={noteBusy} />
+              </div>
+
+              {/* Photos */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Photos</p>
+                <PhotoSection entity="house" entityId={house?.id ?? null} currentUser={currentUser} />
               </div>
 
               {/* Visit history */}
