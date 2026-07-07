@@ -41,7 +41,7 @@ export async function getLeaderboard(teamId: string | null): Promise<Leaderboard
 One SQL query (counts serialize as strings over neon-http, hence the string
 fields — same convention as the existing stats types):
 
-- Base: `users` where `role IS NOT NULL`, and `team_id = ${teamId}` when
+- Base: `users` where `role = 'rep'` (managers/admins do not compete), and `team_id = ${teamId}` when
   teamId is non-null.
 - LEFT JOIN a UNION ALL subquery of `visits` and `business_visits`
   (columns: `user_id`, `contact_status`, `sale_outcome`, `created_at`).

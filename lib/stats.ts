@@ -112,7 +112,7 @@ export async function getLeaderboard(teamId: string | null): Promise<Leaderboard
       SELECT user_id, contact_status, sale_outcome, created_at FROM business_visits
       WHERE created_at >= LEAST(date_trunc('week', CURRENT_DATE), date_trunc('month', CURRENT_DATE))
     ) v ON v.user_id = u.id
-    WHERE u.role IS NOT NULL ${teamFilter}
+    WHERE u.role = 'rep' ${teamFilter}
     GROUP BY u.id, u.name
   `)
   return rows.rows as LeaderboardRow[]
