@@ -28,4 +28,11 @@ describe('submitVisit', () => {
     expect(res).toEqual({ ok: false })
     expect(enqueue).not.toHaveBeenCalled()
   })
+
+  it('returns ok:false when both the fetch and the enqueue fail', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    vi.spyOn(queue, 'enqueueVisit').mockRejectedValue(new Error('IndexedDB unavailable'))
+    const res = await submitVisit('/api/visits', { householdId: 'h1' })
+    expect(res).toEqual({ ok: false })
+  })
 })

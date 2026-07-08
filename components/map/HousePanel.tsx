@@ -135,11 +135,13 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
     if (!res.ok) { setError('Failed to save visit. Please try again.'); return }
     if (res.queued) {
       refreshSync()
-    } else {
-      const saved = res.data as { houseStatusId?: string | null }
-      if (house && saved.houseStatusId !== undefined) {
-        onHouseUpdate?.(house.id, { statusId: saved.houseStatusId })
-      }
+      setView('detail')
+      setVisitHouseholdId(null)
+      return
+    }
+    const saved = res.data as { houseStatusId?: string | null }
+    if (house && saved.houseStatusId !== undefined) {
+      onHouseUpdate?.(house.id, { statusId: saved.houseStatusId })
     }
     setView('detail')
     setVisitHouseholdId(null)

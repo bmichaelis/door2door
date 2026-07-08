@@ -15,7 +15,11 @@ export async function submitVisit(endpoint: VisitEndpoint, payload: unknown): Pr
     if (!res.ok) return { ok: false }
     return { ok: true, data: await res.json() }
   } catch {
-    await enqueueVisit(endpoint, payload)
-    return { ok: true, queued: true }
+    try {
+      await enqueueVisit(endpoint, payload)
+      return { ok: true, queued: true }
+    } catch {
+      return { ok: false }
+    }
   }
 }
