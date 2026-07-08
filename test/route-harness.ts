@@ -19,7 +19,7 @@ export function jsonRequest(method: string, url: string, body?: unknown): NextRe
   return new NextRequest(new URL(url, 'http://localhost').toString(), init)
 }
 
-export function params(obj: Record<string, string>) {
+export function params(obj: Record<string, string>): { params: Promise<Record<string, string>> } {
   return { params: Promise.resolve(obj) }
 }
 
@@ -30,9 +30,11 @@ type Queues = Partial<Record<Op, unknown[]>>
 // thenable (awaiting it resolves the next queued result for the op it began as).
 function makeChain(op: Op, pull: (op: Op) => unknown) {
   const chain: Record<string, unknown> = {}
-  const passthrough = ['from', 'where', 'set', 'values', 'returning', 'onConflictDoNothing', 'orderBy', 'limit', 'groupBy', 'leftJoin', 'innerJoin']
+  const passthrough = ['from', 'where', 'set', 'values', 'returning', 'onConflictDoNothing', 'orderBy', 'limit', 'groupBy', 'leftJoin', 'innerJoin', 'catch']
   for (const m of passthrough) chain[m] = () => chain
-  chain.then = (resolve: (v: unknown) => void) => resolve(pull(op))
+  chain.then = (resolve: (v: unknown) => void, reject?: (e: unknown) => void) => {
+    try { resolve(pull(op)) } catch (e) { if (reject) reject(e); else throw e }
+  }
   return chain
 }
 
