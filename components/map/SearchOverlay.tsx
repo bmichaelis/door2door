@@ -118,7 +118,7 @@ export function SearchOverlay({ open, onClose, onSelect }: Props) {
 
           {query.trim() && !searching && houseResultsForDisplay.length === 0 && bizResults.length === 0 && (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-              No results for "{query}"
+              No results for &quot;{query}&quot;
             </p>
           )}
 
