@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { appointments } from '@/lib/db/schema'
+import { eq, sql } from 'drizzle-orm'
 import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { getAgenda } from '@/lib/appointments-server'
+import { getGoogleAccessToken, createCalendarEvent } from '@/lib/google-calendar'
+import { normalizeLocal } from '@/lib/local-time'
 
 export const GET = withErrorHandling(async () => {
   const session = await auth()
@@ -37,5 +40,27 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     scheduledAt: when,
     notes: body.notes?.trim() || null,
   }).returning()
+
+  // Best-effort Google Calendar sync — never blocks the booking
+  try {
+    const token = await getGoogleAccessToken(session!.user!.id!)
+    if (token) {
+      const labelRows = hasHouse
+        ? await db.execute(sql`SELECT number || ' ' || street AS label FROM houses WHERE id = ${body.houseId}`)
+        : await db.execute(sql`SELECT name AS label FROM businesses WHERE id = ${body.businessId}`)
+      const eventId = await createCalendarEvent(token, {
+        summary: `Appointment: ${(labelRows.rows[0]?.label as string | undefined) ?? 'door2door'}`,
+        description: appointment.notes ?? '',
+        startLocal: normalizeLocal(body.scheduledAt),
+      })
+      if (eventId) {
+        await db.update(appointments).set({ googleEventId: eventId }).where(eq(appointments.id, appointment.id))
+        appointment.googleEventId = eventId
+      }
+    }
+  } catch (e) {
+    console.error('calendar sync failed', e)
+  }
+
   return NextResponse.json(appointment, { status: 201 })
 })

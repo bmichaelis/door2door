@@ -92,6 +92,10 @@ describe('schema', () => {
     expect(appointments.notes).toBeDefined()
   })
 
+  it('appointments have a google event id column', () => {
+    expect((appointments.googleEventId as { name: string }).name).toBe('google_event_id')
+  })
+
   it('photo tables have required columns', () => {
     expect((housePhotos.houseId as { name: string }).name).toBe('house_id')
     expect((housePhotos.r2Key as { name: string }).name).toBe('r2_key')
