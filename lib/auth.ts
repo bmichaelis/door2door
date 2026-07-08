@@ -47,8 +47,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const updates: Partial<typeof accounts.$inferInsert> = {
         access_token: account.access_token ?? null,
         expires_at: account.expires_at ?? null,
-        scope: account.scope ?? null,
       }
+      // Only update scope/refresh_token when present — a login response that
+      // omits them must never wipe a previously granted value
+      if (account.scope) updates.scope = account.scope
       if (account.refresh_token) updates.refresh_token = account.refresh_token
       await db.update(accounts).set(updates).where(
         and(eq(accounts.provider, 'google'), eq(accounts.providerAccountId, account.providerAccountId))
