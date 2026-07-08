@@ -5,6 +5,7 @@ import { signOut } from 'next-auth/react'
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PendingSyncBadge } from '@/components/pwa/PendingSyncBadge'
 
 type Props = { role: string }
 
@@ -100,12 +101,15 @@ export function NavBar({ role }: Props) {
         )}
       </nav>
 
-      <button
-        onClick={() => signOut()}
-        className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-      >
-        Sign out
-      </button>
+      <div className="flex items-center gap-3">
+        <PendingSyncBadge />
+        <button
+          onClick={() => signOut()}
+          className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
     </header>
   )
 }

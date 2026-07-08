@@ -17,6 +17,8 @@ import { useTags } from './useTags'
 import { useNotes } from './useNotes'
 import { AppointmentForm } from '@/components/appointments/AppointmentForm'
 import { PhotoSection } from '@/components/photos/PhotoSection'
+import { submitVisit } from '@/lib/submit-visit'
+import { useSync } from '@/components/pwa/SyncProvider'
 
 type Household = { id: string; surname: string | null; headOfHouseholdName: string | null; spouseName: string | null; active: boolean; createdAt: string }
 type Visit = { id: string; contactStatus: string; interestLevel: string | null; saleOutcome: string | null; notes: string | null; createdAt: string }
@@ -48,6 +50,7 @@ const CONTACT_LABEL: Record<string, string> = {
 }
 
 export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdate, prevHouse, nextHouse, onHouseChange }: Props) {
+  const { refresh: refreshSync } = useSync()
   const [view, setView] = useState<View>('detail')
   const [households, setHouseholds] = useState<Household[]>([])
   const [visits, setVisits] = useState<Visit[]>([])
@@ -128,13 +131,15 @@ export function HousePanel({ house, currentUser, statuses, onClose, onHouseUpdat
   }
 
   async function handleLogVisit(data: VisitFormData) {
-    const res = await fetch('/api/visits', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
+    const res = await submitVisit('/api/visits', data)
     if (!res.ok) { setError('Failed to save visit. Please try again.'); return }
-    const saved = await res.json()
+    if (res.queued) {
+      refreshSync()
+      setView('detail')
+      setVisitHouseholdId(null)
+      return
+    }
+    const saved = res.data as { houseStatusId?: string | null }
     if (house && saved.houseStatusId !== undefined) {
       onHouseUpdate?.(house.id, { statusId: saved.houseStatusId })
     }

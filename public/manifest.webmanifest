@@ -1,0 +1,12 @@
+{
+  "name": "Door to Door",
+  "short_name": "Door2Door",
+  "description": "Field sales platform for door-to-door teams",
+  "start_url": "/map",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

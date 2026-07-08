@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom'
 
 process.env.AUTH_GOOGLE_ID = process.env.AUTH_GOOGLE_ID ?? 'test-google-id'
