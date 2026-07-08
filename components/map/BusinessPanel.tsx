@@ -16,6 +16,8 @@ import { useTags } from './useTags'
 import { useNotes } from './useNotes'
 import { AppointmentForm } from '@/components/appointments/AppointmentForm'
 import { PhotoSection } from '@/components/photos/PhotoSection'
+import { submitVisit } from '@/lib/submit-visit'
+import { useSync } from '@/components/pwa/SyncProvider'
 
 type Visit = {
   id: string
@@ -77,6 +79,7 @@ const OUTCOME_STYLES: Record<string, string> = {
 }
 
 export function BusinessPanel({ business, statuses, currentUser, onClose, onBusinessUpdate }: Props) {
+  const { refresh: refreshSync } = useSync()
   const [view, setView] = useState<'detail' | 'log-visit' | 'book-appointment'>('detail')
   const [visits, setVisits] = useState<Visit[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -160,28 +163,27 @@ export function BusinessPanel({ business, statuses, currentUser, onClose, onBusi
     e.preventDefault()
     if (!business) return
     setSaving(true)
-    const res = await fetch('/api/business-visits', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        businessId: business.id,
-        contactStatus,
-        interestLevel: interestLevel || undefined,
-        saleOutcome: saleOutcome || undefined,
-        notes: notes || undefined,
-        followUpAt: followUpAt || undefined,
-      }),
+    const res = await submitVisit('/api/business-visits', {
+      businessId: business.id,
+      contactStatus,
+      interestLevel: interestLevel || undefined,
+      saleOutcome: saleOutcome || undefined,
+      notes: notes || undefined,
+      followUpAt: followUpAt || undefined,
     })
     setSaving(false)
-    if (res.ok) {
-      const visit = await res.json()
-      setVisits(prev => [visit, ...prev])
+    if (!res.ok) return
+    if (res.queued) {
+      refreshSync()
+    } else {
+      const visit = res.data as { businessStatusId?: string | null }
+      setVisits(prev => [visit as never, ...prev])
       if (business && visit.businessStatusId !== undefined) {
         onBusinessUpdate?.(business.id, { statusId: visit.businessStatusId })
       }
-      resetForm()
-      setView('detail')
     }
+    resetForm()
+    setView('detail')
   }
 
   const address = [

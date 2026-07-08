@@ -14,6 +14,7 @@ import MapStyleToggle, { type MapStyle } from './MapStyleToggle'
 import { BusinessPanel } from './BusinessPanel'
 import { SearchOverlay } from './SearchOverlay'
 import { SearchIcon } from 'lucide-react'
+import { LocateMeButton } from './LocateMeButton'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
@@ -244,6 +245,7 @@ export function MapShell({ currentUser }: Props) {
         </div>
         {/* Layer toggle + search — bottom right */}
         <div className="flex items-center gap-2">
+          <LocateMeButton onLocate={(lat, lng) => setTargetLocation({ lat, lng })} />
           <button
             onClick={() => setSearchOpen(true)}
             className="flex items-center justify-center h-9 w-9 rounded-full border bg-background/95 shadow-lg backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors"
