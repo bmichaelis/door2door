@@ -223,6 +223,7 @@ export const appointments = pgTable('appointments', {
   scheduledAt: timestamp('scheduled_at').notNull(),
   notes: text('notes'),
   status: text('status', { enum: ['scheduled', 'completed', 'cancelled', 'no_show'] }).default('scheduled').notNull(),
+  googleEventId: text('google_event_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

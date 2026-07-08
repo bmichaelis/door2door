@@ -99,6 +99,13 @@
       "when": 1783437652444,
       "tag": "0013_territories",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1783467229017,
+      "tag": "0014_calendar_sync",
+      "breakpoints": true
     }
   ]
 }
