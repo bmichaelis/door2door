@@ -30,6 +30,7 @@ export async function getGoogleAccessToken(userId: string): Promise<string | nul
         grant_type: 'refresh_token',
         refresh_token: account.refresh_token,
       }),
+      signal: AbortSignal.timeout(3000),
     })
     if (!res.ok) return null
     const data = await res.json() as { access_token: string; expires_in: number }
@@ -56,6 +57,7 @@ export async function createCalendarEvent(
         start: { dateTime: event.startLocal, timeZone: ORG_TIMEZONE },
         end: { dateTime: addMinutesLocal(event.startLocal, 60), timeZone: ORG_TIMEZONE },
       }),
+      signal: AbortSignal.timeout(3000),
     })
     if (!res.ok) return null
     const data = await res.json() as { id?: string }
@@ -70,6 +72,7 @@ export async function deleteCalendarEvent(token: string, eventId: string): Promi
     await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000),
     })
   } catch {
     // best-effort — a stranded event is acceptable

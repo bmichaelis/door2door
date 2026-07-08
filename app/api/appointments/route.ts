@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { appointments } from '@/lib/db/schema'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { getAgenda } from '@/lib/appointments-server'
@@ -54,7 +54,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         startLocal: normalizeLocal(body.scheduledAt),
       })
       if (eventId) {
-        await db.update(appointments).set({ googleEventId: eventId }).where(eq(appointments.id, appointment.id))
+        await db.update(appointments)
+          .set({ googleEventId: eventId })
+          .where(and(eq(appointments.id, appointment.id), eq(appointments.status, 'scheduled')))
         appointment.googleEventId = eventId
       }
     }
