@@ -75,8 +75,14 @@ function toCsv(header, records) {
 // ---------- extraction ----------
 const BAD_DOMAINS = ['sentry.io', 'sentry-cdn', 'wixpress.com', 'wix.com', 'example.com', 'example.org',
   'godaddy.com', 'squarespace.com', 'schema.org', 'w3.org', 'googleapis.com', 'gstatic.com', 'jsdelivr.net',
-  'cloudflare.com', 'fontawesome.com', 'sentry.wixpress.com', 'domain.com', 'email.com', 'yourdomain.com']
-const BAD_LOCALPARTS = ['example', 'yourname', 'youremail', 'someone', 'user', 'name', 'email', 'firstname', 'lastname']
+  'cloudflare.com', 'fontawesome.com', 'sentry.wixpress.com', 'domain.com', 'email.com', 'yourdomain.com',
+  'test.com',
+  // third-party ordering/booking/dealer platforms — not the business's own inbox
+  'menufy.com', 'dealerscloud.com', 'dealer.com', 'dealercarsearch.com', 'carsforsale.com', 'cargurus.com',
+  'doordash.com', 'ubereats.com', 'grubhub.com', 'toasttab.com', 'toast.com', 'squareup.com', 'clover.com',
+  'opentable.com', 'resy.com', 'mindbodyonline.com', 'vagaro.com', 'booksy.com', 'schedulicity.com']
+const BAD_LOCALPARTS = ['example', 'yourname', 'youremail', 'someone', 'user', 'name', 'email', 'firstname',
+  'lastname', 'test', 'testing', 'your', 'noreply', 'no-reply', 'donotreply', 'postmaster', 'webmaster', 'abuse']
 const ASSET_EXT = /\.(png|jpe?g|gif|webp|avif|bmp|tiff?|svg|css|js|ico|woff2?|ttf)$/i
 
 function cleanEmails(raw, siteDomain) {
