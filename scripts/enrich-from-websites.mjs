@@ -77,7 +77,7 @@ const BAD_DOMAINS = ['sentry.io', 'sentry-cdn', 'wixpress.com', 'wix.com', 'exam
   'godaddy.com', 'squarespace.com', 'schema.org', 'w3.org', 'googleapis.com', 'gstatic.com', 'jsdelivr.net',
   'cloudflare.com', 'fontawesome.com', 'sentry.wixpress.com', 'domain.com', 'email.com', 'yourdomain.com']
 const BAD_LOCALPARTS = ['example', 'yourname', 'youremail', 'someone', 'user', 'name', 'email', 'firstname', 'lastname']
-const ASSET_EXT = /\.(png|jpe?g|gif|webp|svg|css|js|ico|woff2?|ttf)$/i
+const ASSET_EXT = /\.(png|jpe?g|gif|webp|avif|bmp|tiff?|svg|css|js|ico|woff2?|ttf)$/i
 
 function cleanEmails(raw, siteDomain) {
   const seen = new Set()
@@ -86,6 +86,8 @@ function cleanEmails(raw, siteDomain) {
     e = e.toLowerCase().replace(/^mailto:/, '').split('?')[0].trim()
     if (!/^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(e)) continue
     if (ASSET_EXT.test(e)) continue
+    if (/@[0-9]+x\./.test(e)) continue          // retina srcset: foo@2x.avif
+    if (/\d{2,}x\d{2,}/.test(e)) continue        // image dimensions in name: 300x37
     const [local, domain] = e.split('@')
     if (BAD_DOMAINS.some((d) => domain.includes(d))) continue
     if (BAD_LOCALPARTS.includes(local)) continue
