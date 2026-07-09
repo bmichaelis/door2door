@@ -55,3 +55,6 @@ next-env.d.ts
 data/*.gdb/
 data/*.pdf
 data/parcels/
+
+# CRM export/enrichment output (data, not source)
+exports/
