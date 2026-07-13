@@ -30,8 +30,12 @@ Issue #16's route-*test-harness* (API-handler testing) is unrelated to routing.
    on any failure.
 5. **Cap:** 10 stops (fits Mapbox's 12-coordinate limit and Google Maps'
    consumer-URL waypoint cap).
-6. **Route shape:** one-way, start fixed as the origin (`source=first`,
-   `roundtrip=false`); the optimizer picks the end.
+6. **Route shape:** one-way with both ends fixed — start = origin
+   (`source=first`), end = the last selected stop (`destination=last`),
+   `roundtrip=false`; the optimizer orders the intermediate stops. (Mapbox
+   Optimization v1 does not support an optimizer-chosen endpoint with
+   `roundtrip=false`; `destination=any` returns `NotImplemented`. Amended
+   from the original "optimizer picks the end" after the final review.)
 
 ## Architecture & Components
 
@@ -52,9 +56,10 @@ Types: `type LatLng = { lat: number; lng: number }`;
 **Server:**
 - `lib/route/optimize.ts`
   - `optimizeOrder(start: LatLng, stops: Stop[]): Promise<Stop[]>` — calls
-    `GET https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{lng,lat;…}?source=first&roundtrip=false&access_token=…`
+    `GET https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{lng,lat;…}?source=first&destination=last&roundtrip=false&access_token=…`
     (start first in the coordinate list), reorders `stops` by the response's
-    `waypoints[i].waypoint_index`. On non-200/timeout/network error →
+    `waypoints[i].waypoint_index`. On non-200/timeout/network error, or a
+    200 response whose body `code !== 'Ok'` (e.g. `NotImplemented`) →
     `nearestNeighborOrder(start, stops)`. Coordinate order is `lng,lat` for
     Mapbox; the lib owns the conversion so callers pass `{lat,lng}`.
 - `app/api/route/optimize/route.ts` — POST handler.
