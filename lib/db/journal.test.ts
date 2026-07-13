@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import {
   readJournal,
@@ -5,8 +6,6 @@ import {
   GRANDFATHERED_IDX,
   type JournalEntry,
 } from './journal'
-
-// @vitest-environment node
 
 describe('migration journal when-ordering', () => {
   it('the real journal has no violations (given grandfathered entries)', () => {
