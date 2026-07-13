@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { sql } from 'drizzle-orm'
+import { tokenPatterns, ilikeAllTokens } from '@/lib/search'
 
 // Shared column list
 const HOUSE_COLS = (alias = 'h') => sql`
@@ -31,16 +32,16 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const q = new URL(req.url).searchParams.get('q')?.trim() ?? ''
   if (!q) return NextResponse.json([])
 
-  const pattern = '%' + q + '%'
+  const patterns = tokenPatterns(q)
 
-  // Two separate trgm-indexed searches UNION'd together.
-  // The old single query with OR + lateral join forced 243K lateral executions,
-  // defeating the trigram index on surname entirely.
+  // Two separate trgm-indexed searches UNION'd together. Each branch keeps its
+  // own expression so its trigram index applies; token AND-matching is an
+  // AND-chain of per-token ILIKEs (BitmapAnd), never OR + lateral join.
   const rows = await db.execute(sql`
     (
       SELECT ${HOUSE_COLS()}, NULL::text AS surname, NULL::text AS "headOfHouseholdName", NULL::text AS "spouseName"
       FROM houses h
-      WHERE (h.number || ' ' || h.street) ILIKE ${pattern}
+      WHERE ${ilikeAllTokens(sql`(h.number || ' ' || h.street)`, patterns)}
       ORDER BY h.street, h.number
       LIMIT 8
     )
@@ -49,7 +50,10 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
       SELECT ${HOUSE_COLS()}, ho.surname, ho.head_of_household_name AS "headOfHouseholdName", ho.spouse_name AS "spouseName"
       FROM households ho
       JOIN houses h ON h.id = ho.house_id
-      WHERE ho.surname ILIKE ${pattern} AND ho.active = true
+      WHERE ${ilikeAllTokens(
+        sql`(COALESCE(ho.surname, '') || ' ' || COALESCE(ho.head_of_household_name, '') || ' ' || COALESCE(ho.spouse_name, ''))`,
+        patterns,
+      )} AND ho.active = true
       ORDER BY h.street, h.number
       LIMIT 8
     )

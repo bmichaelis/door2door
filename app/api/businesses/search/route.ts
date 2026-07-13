@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { requireRole } from '@/lib/permissions'
 import { withErrorHandling } from '@/lib/api'
 import { sql } from 'drizzle-orm'
+import { tokenPatterns, ilikeAllTokens } from '@/lib/search'
 
 const BUSINESS_COLS = sql`
   businesses.id, businesses.name, businesses.type, businesses.category,
@@ -23,14 +24,14 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const q = new URL(req.url).searchParams.get('q')?.trim() ?? ''
   if (!q) return NextResponse.json([])
 
-  const pattern = '%' + q + '%'
+  const patterns = tokenPatterns(q)
 
   // Two trgm-indexed searches UNION'd. Pattern matches the houses search route.
   const rows = await db.execute(sql`
     (
       SELECT ${BUSINESS_COLS}
       FROM businesses
-      WHERE businesses.name ILIKE ${pattern}
+      WHERE ${ilikeAllTokens(sql`businesses.name`, patterns)}
       ORDER BY businesses.name
       LIMIT 8
     )
@@ -38,7 +39,10 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     (
       SELECT ${BUSINESS_COLS}
       FROM businesses
-      WHERE (COALESCE(businesses.number, '') || ' ' || COALESCE(businesses.street, '')) ILIKE ${pattern}
+      WHERE ${ilikeAllTokens(
+        sql`(COALESCE(businesses.number, '') || ' ' || COALESCE(businesses.street, ''))`,
+        patterns,
+      )}
       ORDER BY businesses.street, businesses.number
       LIMIT 8
     )
