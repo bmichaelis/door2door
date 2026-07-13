@@ -280,7 +280,7 @@ export function MapShell({ currentUser }: Props) {
               onClick={() => {
                 if (!routeStart) return
                 const all = businesses.map(toStop)
-                setRouteOrdered(null); setRouteUrl(null)
+                setRouteOrdered(null); setRouteUrl(null); setRouteError(null)
                 setRouteStops(nearestN(routeStart, all, MAX_STOPS))
               }}
             >
@@ -293,7 +293,7 @@ export function MapShell({ currentUser }: Props) {
           <LocateMeButton onLocate={(lat, lng) => setTargetLocation({ lat, lng })} />
           <button
             type="button"
-            aria-label="Plan route"
+            aria-label="Toggle route mode"
             onClick={() => setRouteMode((m) => !m)}
             className={`flex h-9 w-9 items-center justify-center rounded-full border shadow-lg backdrop-blur-sm transition-colors ${routeMode ? 'bg-primary text-primary-foreground' : 'bg-background/95 text-muted-foreground hover:text-foreground'}`}
           >
@@ -365,14 +365,24 @@ export function MapShell({ currentUser }: Props) {
           onUseMyLocation={() => {
             if (!('geolocation' in navigator)) { setRouteError('Location unavailable'); return }
             navigator.geolocation.getCurrentPosition(
-              (pos) => { setRouteStart({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setRouteError(null) },
+              (pos) => {
+                setRouteStart({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+                setRouteError(null)
+                setRouteOrdered(null); setRouteUrl(null)
+              },
               () => setRouteError('Location denied — enter a start address'),
             )
           }}
           onAddressSubmit={async (addr) => {
-            const g = await geocodeAddress(addr)
-            if (!g) { setRouteError("Couldn't find that address"); return }
-            setRouteStart({ lat: g.lat, lng: g.lng }); setRouteError(null)
+            try {
+              const g = await geocodeAddress(addr)
+              if (!g) { setRouteError("Couldn't find that address"); return }
+              setRouteStart({ lat: g.lat, lng: g.lng })
+              setRouteError(null)
+              setRouteOrdered(null); setRouteUrl(null)
+            } catch {
+              setRouteError("Couldn't find that address")
+            }
           }}
           onRemoveStop={(id) => { setRouteOrdered(null); setRouteUrl(null); setRouteStops((p) => p.filter((s) => s.id !== id)) }}
           onClear={() => { setRouteStops([]); setRouteOrdered(null); setRouteUrl(null); setRouteError(null) }}

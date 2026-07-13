@@ -5,7 +5,7 @@ export async function optimizeOrder(start: LatLng, stops: Stop[]): Promise<Stop[
   try {
     if (!token) throw new Error('NEXT_PUBLIC_MAPBOX_TOKEN not set')
     const coords = [start, ...stops].map((p) => `${p.lng},${p.lat}`).join(';')
-    const url = `https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${coords}?source=first&roundtrip=false&access_token=${token}`
+    const url = `https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${coords}?source=first&destination=last&roundtrip=false&access_token=${token}`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`Mapbox Optimization ${res.status}`)
     const data = (await res.json()) as { code?: string; waypoints?: { waypoint_index: number }[] }
