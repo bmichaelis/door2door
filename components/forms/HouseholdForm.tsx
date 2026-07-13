@@ -26,7 +26,7 @@ export function HouseholdForm({ houseId, onSubmit, onCancel }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Creating a new household will archive the current family's visit history.
+        Creating a new household will archive the current family&apos;s visit history.
       </p>
       <div>
         <Label>Family Surname</Label>
