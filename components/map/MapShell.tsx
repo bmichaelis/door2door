@@ -13,8 +13,11 @@ import type { LayerVisibility, ViewportBounds } from './MapView'
 import MapStyleToggle, { type MapStyle } from './MapStyleToggle'
 import { BusinessPanel } from './BusinessPanel'
 import { SearchOverlay } from './SearchOverlay'
-import { SearchIcon } from 'lucide-react'
+import { SearchIcon, RouteIcon } from 'lucide-react'
 import { LocateMeButton } from './LocateMeButton'
+import RoutePanel from './RoutePanel'
+import { nearestN, type LatLng, type Stop } from '@/lib/route/geo'
+import { geocodeAddress } from '@/lib/mapbox'
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
@@ -138,6 +141,18 @@ export function MapShell({ currentUser }: Props) {
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
 
+  const [routeMode, setRouteMode] = useState(false)
+  const [routeStops, setRouteStops] = useState<Stop[]>([])
+  const [routeStart, setRouteStart] = useState<LatLng | null>(null)
+  const [routeOrdered, setRouteOrdered] = useState<Stop[] | null>(null)
+  const [routeUrl, setRouteUrl] = useState<string | null>(null)
+  const [routePlanning, setRoutePlanning] = useState(false)
+  const [routeError, setRouteError] = useState<string | null>(null)
+  const MAX_STOPS = 10
+
+  const toStop = useCallback((b: { id: string; name: string; lat: number; lng: number }): Stop =>
+    ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }), [])
+
   const effectiveHouses = useMemo(
     () => houses.map(h => { const o = overrides.get(h.id); return o ? { ...h, ...o } : h }),
     [houses, overrides]
@@ -159,6 +174,21 @@ export function MapShell({ currentUser }: Props) {
       next: idx < streetHouses.length - 1 ? streetHouses[idx + 1] : null,
     }
   }, [selectedHouse, effectiveHouses])
+
+  function handleBusinessClick(b: BusinessRow) {
+    if (!routeMode) {
+      setSelectedHouse(null)
+      setSelectedBusiness(b)
+      setHighlightedHouseId(null)
+      return
+    }
+    setRouteOrdered(null); setRouteUrl(null); setRouteError(null)
+    setRouteStops((prev) => {
+      if (prev.some((s) => s.id === b.id)) return prev.filter((s) => s.id !== b.id)
+      if (prev.length >= MAX_STOPS) { setRouteError(`Routes are limited to ${MAX_STOPS} stops`); return prev }
+      return [...prev, toStop(b)]
+    })
+  }
 
   function handleBusinessUpdate(id: string, updates: Partial<BusinessRow>) {
     setBusinesses(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
@@ -213,7 +243,7 @@ export function MapShell({ currentUser }: Props) {
         targetLocation={targetLocation}
         selectedHouseId={highlightedHouseId}
         onHouseClick={house => { setSelectedBusiness(null); setSelectedHouse(house); setHighlightedHouseId(house.id) }}
-        onBusinessClick={business => { setSelectedHouse(null); setSelectedBusiness(business); setHighlightedHouseId(null) }}
+        onBusinessClick={handleBusinessClick}
         onMapClick={(lat, lng) => {
           setSelectedHouse(null)
           setSelectedBusiness(null)
@@ -242,10 +272,33 @@ export function MapShell({ currentUser }: Props) {
             )
           )}
           <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
+          {routeMode && (
+            <button
+              type="button"
+              className="rounded-full border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur-sm underline transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
+              disabled={!routeStart}
+              onClick={() => {
+                if (!routeStart) return
+                const all = businesses.map(toStop)
+                setRouteOrdered(null); setRouteUrl(null); setRouteError(null)
+                setRouteStops(nearestN(routeStart, all, MAX_STOPS))
+              }}
+            >
+              Route what&apos;s on the map
+            </button>
+          )}
         </div>
         {/* Layer toggle + search — bottom right */}
         <div className="flex items-center gap-2">
           <LocateMeButton onLocate={(lat, lng) => setTargetLocation({ lat, lng })} />
+          <button
+            type="button"
+            aria-label="Toggle route mode"
+            onClick={() => setRouteMode((m) => !m)}
+            className={`flex h-9 w-9 items-center justify-center rounded-full border shadow-lg backdrop-blur-sm transition-colors ${routeMode ? 'bg-primary text-primary-foreground' : 'bg-background/95 text-muted-foreground hover:text-foreground'}`}
+          >
+            <RouteIcon className="h-4 w-4" />
+          </button>
           <button
             onClick={() => setSearchOpen(true)}
             className="flex items-center justify-center h-9 w-9 rounded-full border bg-background/95 shadow-lg backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -301,6 +354,59 @@ export function MapShell({ currentUser }: Props) {
         nextHouse={adjacentHouses.next}
         onHouseChange={setSelectedHouse}
       />
+      {routeMode && (
+        <RoutePanel
+          stops={routeOrdered ?? routeStops}
+          ordered={routeOrdered !== null}
+          hasStart={routeStart !== null}
+          planning={routePlanning}
+          error={routeError}
+          googleMapsUrl={routeUrl}
+          onUseMyLocation={() => {
+            if (!('geolocation' in navigator)) { setRouteError('Location unavailable'); return }
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                setRouteStart({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+                setRouteError(null)
+                setRouteOrdered(null); setRouteUrl(null)
+              },
+              () => setRouteError('Location denied — enter a start address'),
+            )
+          }}
+          onAddressSubmit={async (addr) => {
+            try {
+              const g = await geocodeAddress(addr)
+              if (!g) { setRouteError("Couldn't find that address"); return }
+              setRouteStart({ lat: g.lat, lng: g.lng })
+              setRouteError(null)
+              setRouteOrdered(null); setRouteUrl(null)
+            } catch {
+              setRouteError("Couldn't find that address")
+            }
+          }}
+          onRemoveStop={(id) => { setRouteOrdered(null); setRouteUrl(null); setRouteStops((p) => p.filter((s) => s.id !== id)) }}
+          onClear={() => { setRouteStops([]); setRouteOrdered(null); setRouteUrl(null); setRouteError(null) }}
+          onClose={() => setRouteMode(false)}
+          onPlan={async () => {
+            if (!routeStart || routeStops.length < 2) return
+            setRoutePlanning(true); setRouteError(null)
+            try {
+              const res = await fetch('/api/route/optimize', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ start: routeStart, stops: routeStops }),
+              })
+              if (!res.ok) throw new Error('optimize failed')
+              const data = (await res.json()) as { orderedStops: Stop[]; googleMapsUrl: string }
+              setRouteOrdered(data.orderedStops); setRouteUrl(data.googleMapsUrl)
+            } catch {
+              setRouteError('Could not plan the route — try again')
+            } finally {
+              setRoutePlanning(false)
+            }
+          }}
+        />
+      )}
       <Dialog open={!!pendingLocation} onOpenChange={open => !open && (setPendingLocation(null), setAddError(null))}>
         <DialogContent>
           <DialogHeader>
