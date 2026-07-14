@@ -21,11 +21,11 @@ export function DrawMap({ onDrawComplete }: Props) {
 
     map.addControl(draw, 'top-right')
 
-    map.on('draw.create', (e: any) => {
+    map.on('draw.create', (e: MapboxDraw.DrawCreateEvent) => {
       const polygon = e.features[0]?.geometry as GeoJSON.Polygon
       if (polygon) onDrawComplete(polygon)
     })
-    map.on('draw.update', (e: any) => {
+    map.on('draw.update', (e: MapboxDraw.DrawUpdateEvent) => {
       const polygon = e.features[0]?.geometry as GeoJSON.Polygon
       if (polygon) onDrawComplete(polygon)
     })

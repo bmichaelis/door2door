@@ -20,11 +20,11 @@ export function DrawControl({ onDrawComplete }: Props) {
     map.addControl(draw)
     drawRef.current = draw
 
-    const handleCreate = (e: any) => {
+    const handleCreate = (e: MapboxDraw.DrawCreateEvent) => {
       const polygon = e.features[0]?.geometry as GeoJSON.Polygon
       if (polygon) onDrawComplete(polygon)
     }
-    const handleUpdate = (e: any) => {
+    const handleUpdate = (e: MapboxDraw.DrawUpdateEvent) => {
       const polygon = e.features[0]?.geometry as GeoJSON.Polygon
       if (polygon) onDrawComplete(polygon)
     }
