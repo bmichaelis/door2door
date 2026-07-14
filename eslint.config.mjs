@@ -11,6 +11,7 @@ const eslintConfig = [
   // (they pollute results with another branch's code). CI checkouts don't have
   // them, so this only affects local runs.
   { ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts', '.vercel/**', '.claude/**'] },
+
   // @typescript-eslint/no-require-imports: scripts/ contains standalone Node.js
   // CommonJS scripts (.js) that predate the ESM migration; require() is expected there.
   // Re-enable once those scripts are converted to ESM (separate follow-up).
