@@ -97,4 +97,10 @@ describe('TerritoriesClient', () => {
     render(<TerritoriesClient currentUser={{ id: 'a1', role: 'admin', teamId: null }} />)
     expect(await screen.findByText('No neighborhoods yet.')).toBeInTheDocument()
   })
+
+  it('requests neighborhoods including empty ones', async () => {
+    render(<TerritoriesClient currentUser={{ id: 'a1', role: 'admin', teamId: null }} />)
+    await screen.findByText('Provo 01')
+    expect(fetch).toHaveBeenCalledWith('/api/neighborhoods?includeEmpty=1')
+  })
 })

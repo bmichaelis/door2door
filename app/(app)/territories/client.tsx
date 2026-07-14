@@ -44,7 +44,7 @@ export function TerritoriesClient({ currentUser }: Props) {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/neighborhoods').then(r => r.ok ? r.json() : Promise.reject(new Error('load failed'))),
+      fetch('/api/neighborhoods?includeEmpty=1').then(r => r.ok ? r.json() : Promise.reject(new Error('load failed'))),
       fetch('/api/users').then(r => r.ok ? r.json() : Promise.reject(new Error('load failed'))),
     ])
       .then(([nbhds, us]: [NeighborhoodRow[], UserRow[]]) => {
