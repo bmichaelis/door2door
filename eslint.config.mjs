@@ -6,7 +6,11 @@ const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta
 
 const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
-  { ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts', '.vercel/**'] },
+  // .claude/worktrees holds sibling git worktrees for other in-flight issues;
+  // they live under the repo dir but are separate checkouts — never lint them
+  // (they pollute results with another branch's code). CI checkouts don't have
+  // them, so this only affects local runs.
+  { ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts', '.vercel/**', '.claude/**'] },
 
   // any is currently pervasive in external-API GeoJSON payloads (Overture/
   // Overpass) and mapbox-gl-draw events (no exported TS types) in these files.
