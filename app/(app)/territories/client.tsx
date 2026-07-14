@@ -11,7 +11,6 @@ type NeighborhoodRow = {
   houseCount: number
   assignedUserId: string | null
   territoryStatus: string | null
-  assignedUserName: string | null
 }
 
 const STATUS_OPTIONS = [
@@ -76,9 +75,6 @@ export function TerritoriesClient({ currentUser }: Props) {
       setNeighborhoods(prev => prev.map(row => {
         if (row.id !== n.id) return row
         const next = { ...row, [field]: value }
-        if (field === 'assignedUserId') {
-          next.assignedUserName = users.find(u => u.id === value)?.name ?? null
-        }
         return next
       }))
     } catch (e) {

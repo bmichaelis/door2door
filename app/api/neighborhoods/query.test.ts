@@ -18,8 +18,16 @@ describe('neighborhoodsListQuery', () => {
     for (const mode of [false, true]) {
       const q = render(mode)
       expect(q).toContain('"housecount"')
-      expect(q).toContain('group by n.id, u.name')
+      expect(q).toContain('group by n.id')
       expect(q).toContain('order by n.name')
+    }
+  })
+
+  it('no longer selects the unused assignedUserName / users join', () => {
+    for (const mode of [false, true]) {
+      const q = render(mode)
+      expect(q).not.toContain('assignedusername')
+      expect(q).not.toContain('join users')
     }
   })
 })

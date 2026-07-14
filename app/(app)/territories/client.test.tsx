@@ -10,8 +10,8 @@ const USERS: UserRow[] = [
 ]
 
 const NEIGHBORHOODS = [
-  { id: 'n1', name: 'Provo 01', team_id: 't1', teamId: 't1', houseCount: 120, assignedUserId: null, territoryStatus: null, assignedUserName: null },
-  { id: 'n2', name: 'Provo 02', team_id: 't2', teamId: 't2', houseCount: 80, assignedUserId: 'r2', territoryStatus: 'active', assignedUserName: 'Ray Rep' },
+  { id: 'n1', name: 'Provo 01', team_id: 't1', teamId: 't1', houseCount: 120, assignedUserId: null, territoryStatus: null },
+  { id: 'n2', name: 'Provo 02', team_id: 't2', teamId: 't2', houseCount: 80, assignedUserId: 'r2', territoryStatus: 'active' },
 ]
 
 beforeEach(() => {
