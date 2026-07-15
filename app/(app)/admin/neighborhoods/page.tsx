@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { teams } from '@/lib/db/schema'
 import { sql } from 'drizzle-orm'
-import { NeighborhoodAdminClient } from './client'
+import { NeighborhoodAdminClient, type Neighborhood } from './client'
 
 export default async function NeighborhoodsPage() {
   const session = await auth()
@@ -16,5 +16,5 @@ export default async function NeighborhoodsPage() {
   )
   const teamsList = await db.select({ id: teams.id, name: teams.name }).from(teams)
 
-  return <NeighborhoodAdminClient neighborhoods={rows.rows as any} teams={teamsList} />
+  return <NeighborhoodAdminClient neighborhoods={rows.rows as Neighborhood[]} teams={teamsList} />
 }

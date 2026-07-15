@@ -22,15 +22,46 @@ type BusinessInput = {
   lng: number
 }
 
+interface OSMElement {
+  type: string
+  id: number | string
+  lat?: number
+  lon?: number
+  center?: { lat: number; lon: number }
+  tags?: Record<string, string>
+}
+interface OverpassResponse {
+  elements?: OSMElement[]
+}
+
+interface OvertureProps {
+  id?: string
+  confidence?: number
+  names?: { primary?: string }
+  categories?: { primary?: string }
+  addresses?: Array<{ freeform?: string; locality?: string; region?: string; postcode?: string }>
+  phones?: string[]
+  websites?: string[]
+}
+interface OvertureFeature {
+  geometry?: { type?: string; coordinates?: [number, number] }
+  properties?: OvertureProps
+}
+// FeatureCollection or a single Feature — both shapes a user might paste/upload.
+interface OvertureInput extends OvertureFeature {
+  type?: string
+  features?: OvertureFeature[]
+}
+
 // ── OSM ──────────────────────────────────────────────────────────────────────
 
 const PRIMARY_TAGS = ['shop', 'amenity', 'office', 'tourism', 'leisure', 'craft', 'healthcare', 'clinic']
 
-function parseOSMElement(el: any): BusinessInput | null {
+function parseOSMElement(el: OSMElement): BusinessInput | null {
   const lat = el.type === 'node' ? el.lat : el.center?.lat
   const lng = el.type === 'node' ? el.lon : el.center?.lon
   if (lat == null || lng == null) return null
-  const tags = el.tags ?? {}
+  const tags: Record<string, string> = el.tags ?? {}
   const name: string = tags.name
   if (!name?.trim()) return null
 
@@ -59,13 +90,14 @@ function parseOSMElement(el: any): BusinessInput | null {
 
 // ── Overture ──────────────────────────────────────────────────────────────────
 
-function parseOvertureFeature(feature: any): BusinessInput | null {
-  if (feature.geometry?.type !== 'Point') return null
-  const [lng, lat] = feature.geometry.coordinates
+function parseOvertureFeature(feature: OvertureFeature): BusinessInput | null {
+  const geom = feature.geometry
+  if (geom?.type !== 'Point' || !geom.coordinates) return null
+  const [lng, lat] = geom.coordinates
   if (lng == null || lat == null) return null
 
-  const props = feature.properties ?? {}
-  const name: string = props.names?.primary
+  const props: OvertureProps = feature.properties ?? {}
+  const name = props.names?.primary
   if (!name?.trim()) return null
 
   // Skip very low-confidence results (spam, duplicates)
@@ -159,7 +191,7 @@ area["name"="${city}"]["admin_level"~"8|6"](area.stateArea)->.searchArea;
 out center tags;
     `.trim()
 
-    let osmData: any
+    let osmData: OverpassResponse
     try {
       const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query })
       if (!res.ok) {
@@ -173,7 +205,7 @@ out center tags;
       return
     }
 
-    const elements: any[] = osmData.elements ?? []
+    const elements: OSMElement[] = osmData.elements ?? []
     if (elements.length === 0) {
       setStatus('error')
       setMessage(`No results. Check that "${city}" and "${state}" match OSM names exactly (e.g. "Utah" not "UT").`)
@@ -239,7 +271,7 @@ export function OvertureImportSection() {
     setMessage('')
     setProgress('Reading file…')
 
-    let geojson: any
+    let geojson: OvertureInput
     try {
       const text = await file.text()
       geojson = JSON.parse(text)
@@ -249,8 +281,8 @@ export function OvertureImportSection() {
       return
     }
 
-    const features: any[] = geojson.type === 'FeatureCollection'
-      ? geojson.features
+    const features: OvertureFeature[] = geojson.type === 'FeatureCollection'
+      ? geojson.features ?? []
       : geojson.type === 'Feature'
         ? [geojson]
         : []

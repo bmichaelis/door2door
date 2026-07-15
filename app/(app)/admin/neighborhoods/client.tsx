@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const DrawMap = dynamic(() => import('@/components/map/DrawMap').then(m => ({ default: m.DrawMap })), { ssr: false })
 
 type Team = { id: string; name: string }
-type Neighborhood = { id: string; name: string; city: string | null; team_id: string | null; team_name: string | null }
+export type Neighborhood = { id: string; name: string; city: string | null; team_id: string | null; team_name: string | null }
 
 type Props = { neighborhoods: Neighborhood[]; teams: Team[] }
 

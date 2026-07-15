@@ -79,11 +79,11 @@ export function ParcelImportClient() {
     setDetectedFields(null)
     setProgress('Reading file — this may take a moment for large files…')
 
-    let features: any[]
+    let features: GeoJSON.Feature[]
     try {
       const text = await file.text()
       setProgress('Parsing GeoJSON…')
-      const geojson = JSON.parse(text)
+      const geojson = JSON.parse(text) as GeoJSON.FeatureCollection | GeoJSON.Feature
       features = geojson.type === 'FeatureCollection'
         ? geojson.features
         : geojson.type === 'Feature'
