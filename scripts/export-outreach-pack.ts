@@ -12,6 +12,7 @@ async function main(): Promise<void> {
     ssl: { rejectUnauthorized: false },
   })
   await client.connect()
+  try {
   const q = async (sql: string) => (await client.query(sql)).rows as Record<string, unknown>[]
 
   mkdirSync(OUT, { recursive: true })
@@ -75,8 +76,9 @@ async function main(): Promise<void> {
     businesses: businesses.length,
     turf: turf.length,
   }, null, 2))
-
-  await client.end()
+  } finally {
+    await client.end()
+  }
 }
 
 main().catch((err) => { console.error(err); process.exitCode = 1 })
