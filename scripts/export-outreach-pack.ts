@@ -22,10 +22,9 @@ async function main(): Promise<void> {
   const addresses = await q(`
     select h.external_id as address_id, h.number, h.street, h.unit, h.city, h.region, h.postcode,
            ST_Y(h.location) as lat, ST_X(h.location) as lng,
-           (hh.id is not null) as single_family,
+           exists(select 1 from households hh where hh.house_id = h.id and hh.active) as single_family,
            n.id as turf_id, n.name as turf_name
     from houses h
-    left join households hh on hh.house_id = h.id and hh.active
     left join neighborhoods n on n.id = h.neighborhood_id
     where ST_Within(h.location, ${ENV})
     order by h.postcode, h.street, h.number`)
