@@ -58,3 +58,6 @@ data/parcels/
 
 # CRM export/enrichment output (data, not source)
 exports/
+
+# Generated data packs (may contain PII) — never commit
+dist/
